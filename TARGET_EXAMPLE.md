@@ -513,7 +513,7 @@ Beyond the five phenomena, the world should show events of these kinds over its 
 
 1. **World:** name, the time range in section 2, and currency.
 2. **Institutions:** the four in section 3.4, each declared with its payment methods, mechanics and the tables in section 5, and each with a staff node.
-3. **Entities and nodes:** the cast in section 3, each with a prompt carrying its personality and its history. Self-serve subscribers are individual actors, created many at a time; enterprise customers, key vendors and the five people are individual too.
+3. **Entities and nodes:** the cast in section 3, each with a prompt carrying its personality and its history, and each node with its first brief for January 2021. Self-serve subscribers are individual actors, created many at a time; enterprise customers, key vendors and the five people are individual too.
 4. **Catalog:** the merchants people buy from, each with descriptor variants (`descriptors`), acted for by the market.
 5. **Relationships:** the edges in section 4, with terms where they are fixed (Contoso's amount and dates, rent, plan prices, payroll dates) and prompts where they are loose (when a customer pays, how an executive behaves). Cards on file and authorized debits are pulls the payee collects.
 6. **Seed:** the history in section 2.1.

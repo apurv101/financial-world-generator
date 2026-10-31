@@ -16,6 +16,11 @@ Plan: `tasks/plan.md` (decisions D1-D6, architecture, risks). Spec: `SPEC.md`.
 - Tests use `FakeLlm` (scripted or replaying fixtures) or the `tests/support/as_agreed.py` policy. Live tests live in `tests/live/` and run only with `WORLDGEN_LIVE=1`.
 - A task that changes the manifest schema updates `docs/manifest-reference.md`. From Task 3 on, a test fails if any model field is undocumented.
 - Engine code never names an institution, industry, payment method or relationship type. From Task 2 on, the neutrality test enforces this.
+- **Preferences are policies (D7).** A task that builds a rule from SPEC's Policies table, or finds a new rule that is our preference, builds it as a policy:
+  - a file in `worldgen/policies/` whose docstring starts "Our preference:", with a comment on every option
+  - a field on `Policies`, defaulting to our preference, and a docs entry
+  - a test for every option, and a comment naming the policy where the code applies it
+  A new policy is added to SPEC's table. Changing a default needs the user (SPEC: ask first). `tasks/plan.md` maps each policy to the task that builds it.
 - Commit after each task. Commit messages carry no Claude attribution lines.
 
 ---
@@ -41,17 +46,18 @@ Plan: `tasks/plan.md` (decisions D1-D6, architecture, risks). Spec: `SPEC.md`.
   - all-or-nothing list calls (D5p)
 - **Run history:** `run_started` lists the starting tree, and what a spawned node is (D6), as answered.
 - **Open Questions:** resolved as in D3.
-- **Success Criterion 1:** as answered in D4e.
+- **Success Criterion 1:** as answered in D4e, plus unknown policies and policy options.
+- **Policies (D7):** the Policies section and table, the policy convention in Code Style, Testing Strategy and Boundaries, and each rule's policy named where SPEC states it.
 
 Update TARGET_EXAMPLE.md only where an answer touches it. Write only the current design, with no mention of removed alternatives.
 
 **Acceptance criteria:**
-- [ ] D1-D6 each have a recorded answer in `tasks/plan.md`
-- [ ] SPEC.md and TARGET_EXAMPLE.md agree with each other and with the answers
-- [ ] Both files describe only the current design
+- [x] D1-D7 each have a recorded answer in `tasks/plan.md`
+- [x] SPEC.md and TARGET_EXAMPLE.md agree with each other and with the answers
+- [x] Both files describe only the current design
 
 **Verification:**
-- [ ] Manual: the user reads both diffs and approves them
+- [x] Manual: the user reads both diffs and approves them
 
 **Dependencies:** None
 **Files likely touched:** `SPEC.md`, `TARGET_EXAMPLE.md`, `tasks/plan.md`
@@ -165,7 +171,8 @@ The test fails if any of these appears as a whole word in an identifier or strin
 
 **Description:** Define frozen pydantic v2 models:
 - `World`: name, start, end, currency, `schema_version`, optional `rng_seed`.
-- `Config`: model, effort, `default_chapter` (D5j), `max_tool_calls_per_turn`. Later tasks add their own tunables.
+- `Config`: model, effort, `max_tool_calls_per_turn` and `policies`.
+- `Policies` (D7): one field per policy, typed by that policy's options and defaulting to our preference. This task adds `default_chapter` (`worldgen/policies/default_chapter.py`, D5j); later tasks add theirs. A test fails if a file in `worldgen/policies/` has no docstring starting "Our preference:" or no field on `Policies`.
 - `Node`: id, role (narrator, actor, staff or market), parent, `stands_for`, prompt, brief (D5e), `next_review`.
 - `Entity`: id, kind, name, descriptors, `fields` (D5c).
 - `Account`: id, holder, `at`, kind, name, methods, opening, limit, rate, linked.
@@ -195,7 +202,7 @@ Write `examples/tracer/manifest.yaml`, over 2021-03-22..2021-04-05:
 - [ ] Gate passes
 
 **Dependencies:** Task 2
-**Files likely touched:** `worldgen/manifest/{world,config,node,entity,account,access,manifest}.py`, `examples/tracer/manifest.yaml`, `docs/manifest-reference.md`
+**Files likely touched:** `worldgen/manifest/{world,config,policies,node,entity,account,access,manifest}.py`, `worldgen/policies/default_chapter.py`, `examples/tracer/manifest.yaml`, `docs/manifest-reference.md`
 **Estimated scope:** M (small model files)
 
 ## Task 4: Manifest models: tables and column sources
@@ -256,6 +263,7 @@ The tracer declares Mercury with three payment methods (`ach`, `wire` and `book`
   - payment method
   - amount: fixed, or omitted so the prompt decides
   - schedule: a list of dates, or a recurrence (`every: day|week|month|quarter|year`, with `day` as one day or a list such as `[10, 26]`, plus `from` and an optional `until`)
+  - optional `to_account`: the payee's receiving account, read under policy `receiving_account: named`
 - **`CatalogEntry`:** id, category, price range and descriptors. Each entry is also an entity.
 - **`Story`:** id, `written_by` and steps. Each step has a day, an actor and an intent, and optionally a counterparty and an amount.
 - **`Noise`:** a scope (world, node, relationship, story or step) plus a prompt.
@@ -374,7 +382,7 @@ The tracer gains a seed:
 - **`Clock`:**
   - Maps dates to day indices from the world start, negative for the seed's past.
   - Answers business-day questions for a named calendar (D5m). `us_federal` holds the Federal Reserve holidays, computed in code with no added dependency; on it, a Saturday holiday does not close the preceding Friday. `every_day` has no closed days.
-  - Gives the default review date for a `default_chapter` value (D5j).
+  - Gives the default review date for each option of policy `default_chapter` (D5j).
 - **`Rng`:** wraps `random.Random` with the optional best-effort `rng_seed`. It is the only source of randomness for mechanisms, and it also generates UUIDs.
 - **`money`:** helpers that quantize `Decimal` to cents, parse and format 2dp strings, and raise on float input.
 
@@ -534,7 +542,7 @@ The date-list and recurrence expanders are one file each. Obligations are clippe
 **Description:**
 - **`institutions/mechanisms/settlement.py`** reads each payment method's rules from the declaration: the settlement range in days, whether it counts business days or calendar days, whether it settles on weekends, and its calendar. It picks a settle day with `Rng`.
 - **`engine/clearinghouse.py`** handles money in flight:
-  - `enqueue` emits the initiation event from the source account to the method's clearing account, under the rules of the institution on the initiating side (D5b).
+  - `enqueue` emits the initiation event from the source account to the method's clearing account, under the rules of the institution that policy `settlement_rules` picks (D5b; build and test all three options).
   - `settle(day)` emits a linked settlement event, from the clearing account to the destination, for everything due that day.
   - `in_flight(day)` reports what is still pending.
   - A held item (Task 38) settles only after it is released.
@@ -565,11 +573,11 @@ Every call is checked on the spot:
 - The tool is in the role's set, and its input parses.
 - The actor's entity holds the source account, or the actor has access to it with that payment method.
 - The account supports the method.
-- Funds are available (D5d).
+- Funds are available under policy `available_funds` (D5d; build and test both options).
 
 A call that passes reserves its funds and is enqueued in the clearinghouse within one synchronous step. A call that fails returns its reason as the tool result, logs `action_rejected`, and emits nothing.
 
-`pay` pushes money from an account the actor can use, by a payment method, to one or more parties, with an amount for each. Each payment lands in the party's receiving account (D5a). It may point to an obligation, or to an earlier event it returns (a refund), which it links.
+`pay` pushes money from an account the actor can use, by a payment method, to one or more parties, with an amount for each. Each payment lands in the account policy `receiving_account` picks (D5a): by default the party's first account that supports the method; under `named`, the `to_account` the call gives, with a refund going back to the account it came from, and a call that names none when several fit is rejected with the choices. It may point to an obligation, or to an earlier event it returns (a refund), which it links.
 
 **Acceptance criteria:**
 - [ ] An overdraft attempt, or a payment by a method the actor's access doesn't grant, returns its reason within the same turn, logs `action_rejected` and leaves no event
@@ -591,7 +599,7 @@ A call that passes reserves its funds and is enqueued in the clearinghouse withi
 - **`NodeView`** is the only path from a brief or a read tool to world state. It covers the node's entity's accounts, the accounts it has access to, its obligations and its own history.
 - **Two read tools:**
   - `my_balances` shows posted and available balances.
-  - `my_obligations` shows due, overdue, and upcoming items within `obligation_horizon_days` (D3).
+  - `my_obligations` shows due, overdue, and upcoming items within policy `obligation_horizon_days` (D3).
 
 **Acceptance criteria:**
 - [ ] `n_morgan`'s `my_obligations` on 2021-04-01 lists the rent obligation, and `n_landlord`'s doesn't
@@ -613,7 +621,7 @@ A call that passes reserves its funds and is enqueued in the clearinghouse withi
   1. the prompt, with its revision id
   2. the chapter brief
   3. noise in scope (empty until Task 36)
-  4. today's items: obligations due today and overdue, story steps, and balance changes since the last turn
+  4. today's items: obligations as policy `obligations_in_brief` picks (D3; due today and overdue by default, plus upcoming under `with_upcoming`), story steps, and balance changes since the last turn
 
   `turn_started` logs the brief along with its revision ids.
 - **The actor role** is a system template plus a tool set: the act tools from Task 16 and the read tools from Task 17. Later tasks add tools to it.
@@ -638,7 +646,7 @@ A call that passes reserves its funds and is enqueued in the clearinghouse withi
 - `pay_late` moves the obligation to the new day, where it returns to the handler's brief.
 - The tool call records whether the answer is a deviation (D5g).
 
-`engine/obligations.py` tracks open obligations per handler. If a turn ends with a due obligation unanswered, the loop continues once with a message listing only the missing items. If they are still unanswered, the engine logs `obligation_unanswered` and renders nothing for them.
+`engine/obligations.py` tracks open obligations per handler. If a turn ends with a due obligation unanswered, the loop continues once with a message listing only the missing items. If they are still unanswered, the engine logs `obligation_unanswered` and renders nothing for them. This is policy `unanswered_obligation`'s default, `ask_once`; under `log_only` the engine logs at once. Payment under a relationship whose terms give a `to_account` lands there under `receiving_account: named`.
 
 Also add `tests/support/as_agreed.py`, the scripted policy described in the plan. It is the offline driver for whole worlds.
 
@@ -667,7 +675,7 @@ Also add `tests/support/as_agreed.py`, the scripted policy described in the plan
 3. Run every turn in parallel, in a `TaskGroup`. Only actors take turns for now; the market and staff start in Tasks 37 and 38.
 4. Close the day: settle the clearinghouse, run each institution's day-close hook (empty until Task 20), and move tomorrow's items into place.
 
-`engine/engine.py` loops over the world range. `idle_turns` (D3) is read from config.
+`engine/engine.py` loops over the world range. Policy `idle_turns` (D3) is read from `config.policies`, and both options are built and tested.
 
 This task adds two log entries: `event`, one per event, by id; and `day_closed`.
 
@@ -866,7 +874,7 @@ These numbers are how the loop gets judged.
 - **Review dates:** `tree/reviews.py` keeps each narrator's next review date. It starts from the manifest's `next_review`, or else from the `default_chapter` date after the start day. Until Task 27, a narrator's next date after a review is the default date after that review day. Each day, before briefs are built, the day loop asks which narrators are due:
   - A narrator due on the same day as one of its ancestors is reviewed as part of the ancestor's review.
   - Reviews of separate subtrees run in parallel.
-- **Report turns:** a review starts with a report turn for every actor, and every staff node inside the tree, in the subtree, all in parallel. The report brief asks what happened since the node's last report, and lists the node's own events and obligation answers since then, read through `NodeView`. The node answers with `report_up`. Act tools are rejected in a report turn (D5l).
+- **Report turns:** a review starts with a report turn for every actor, and every staff node inside the tree, in the subtree, all in parallel. The report brief asks what happened since the node's last report, and lists the node's own events and obligation answers since then, read through `NodeView`. The node answers with `report_up`. Act tools are rejected in a report turn under policy `report_turn_tools` (D5l); under `all` they run.
 - **Reports up:** narrators below the reviewing narrator then take turns level by level, starting from the deepest, with narrators on the same level running in parallel. Each reads `children_reports` and gives its own `report_up`. A child that didn't report shows as "no report" to its parent.
 - **Narrator role:** add the narrator system template and tool set. A narrator sees its own prompt and brief, and its children's prompts and reports. `as_agreed` learns to write stock reports.
 
@@ -910,9 +918,10 @@ Log entries: `brief_written` and `review_scheduled`.
 
 ## Task 28: Escalation
 
-**Description:** `escalate` takes a reason and is a tool for every node with a parent: actors, narrators and staff inside the tree. The reason reaches the caller's parent as an urgent report, which `children_reports` lists first and marks as urgent. Delivery follows D5k:
+**Description:** `escalate` takes a reason and is a tool for every node with a parent: actors, narrators and staff inside the tree. The reason reaches the caller's parent as an urgent report, which `children_reports` lists first and marks as urgent. Delivery follows policy `escalation_in_review` (D5k). Its default, `read_in_review`:
 - If a review that covers the parent is under way, and the parent hasn't read its children's reports yet, the parent reads the escalation in that review.
 - Otherwise the parent's next review moves to the next day if it was later, with trigger `escalated` naming the escalating node. Several escalations to one parent bring one review.
+- Under `next_day`, every escalation takes the second path.
 
 In that review the parent handles the escalation or escalates to its own parent. The root's call is rejected because it has no parent. The `escalated` entry records the reason and which delivery applied, so `verify` can check SC14 from the log (Task 31).
 
@@ -935,7 +944,7 @@ In that review the parent handles the escalation or escalates to its own parent.
 
 ## Task 29: Growing the tree
 
-**Description:** Narrator tools, each taking a list of items and validated on the spot. A call is applied all or nothing, and a rejection names every failing item (D5p).
+**Description:** Narrator tools, each taking a list of items and validated on the spot. A call is applied all or nothing, and a rejection names every failing item (D5p). This is policy `list_calls`; build and test `per_item` too.
 - `spawn_child`: role, prompt, brief, and optionally `stands_for`. A staff child must stand for an institution.
 - `retire_child`: rejected while the node still handles active relationships.
 - `create_entity`: includes descriptors and `fields`.
@@ -964,7 +973,7 @@ Log entries: `node_spawned` and `node_retired`, each naming the narrator.
 
 ## Task 30: Relationships, stories and catalog entries written during a run
 
-**Description:** Three narrator tools, each taking a list (D5p):
+**Description:** Three narrator tools, each taking a list under policy `list_calls` (D5p):
 - **`write_relationship`** creates, amends (terms, handlers, prompt) or ends a relationship. Every party that is neither an institution nor a catalog party must have a node in the writer's subtree. A new or amended relationship is compiled into obligations from the next day.
 - **`write_story`** writes steps for actors in the writer's subtree, dated from the next day and within the world range.
 - **`write_catalog`** adds catalog entries, each with a category, a price range and descriptors. They are in the catalog from the next day.
@@ -1028,7 +1037,7 @@ The isolation test plants a unique canary in every node's prompt, notes and brie
 - the market, about a payment it made to a catalog party
 - anyone who has messaged it
 
-Messages reach the recipient's inbox the next day and appear among its items. `send_message` is rejected in a report turn (D5l). `my_inbox` reads the inbox, and `message_sent` is logged. The isolation validator learns that delivered messages are an allowed channel.
+Messages reach the recipient's inbox the next day and appear among its items. `send_message` is rejected in a report turn under policy `report_turn_tools` (D5l). `my_inbox` reads the inbox, and `message_sent` is logged. The isolation validator learns that delivered messages are an allowed channel.
 
 **Acceptance criteria:**
 - [ ] A message sent on day d appears in the recipient's brief on d+1 and not on d
@@ -1048,7 +1057,7 @@ Messages reach the recipient's inbox the next day and appear among its items. `s
 **Description:** Three act tools:
 - **`authorize`** gives a payee a mandate on one of the actor's accounts, for named payment methods.
 - **`revoke`** ends a mandate.
-- **`collect`** pulls money under a mandate from a payer's account into an account the caller can use. It is validated like `pay` plus the mandate check, and its settlement rules come from the payee's side (D5b).
+- **`collect`** pulls money under a mandate from a payer's account into an account the caller can use. It is validated like `pay` plus the mandate check, and its settlement rules come from the payee's side under policy `settlement_rules`'s default (D5b).
 
 `authorize` and `revoke` emit record events (D5c). Seed mandates are in force from day 0. `answer_obligation` gains the `collect` decision for pull obligations, and `as_agreed` answers pull obligations with it.
 
@@ -1068,7 +1077,7 @@ Messages reach the recipient's inbox the next day and appear among its items. `s
 ## Task 34: Record tools: `bill`, `record_activity` and `annotate`
 
 **Description:** Three act tools that move no money and each emit a zero-amount record event (D5c):
-- **`bill`** asks a party for payment under a relationship the caller handles, with an amount, a due day, a memo and `details`. The bill goes to the payer's handler as a message, and opens an obligation for that handler on the due day.
+- **`bill`** asks a party for payment under a relationship the caller handles, with an amount, a due day, a memo, `details` and an optional `to_account` (read under policy `receiving_account: named`). The bill goes to the payer's handler as a message, and opens an obligation for that handler on the due day.
 - **`record_activity`** records something delivered or used under a relationship (hours, loads, ad spend), with `details`. It reaches the other party's handler the next day, so a vendor can bill from what was used.
 - **`annotate`** adds or changes the memo on one of the actor's own past transactions. Its event links the one it changes, and that event's rows re-render with the new memo.
 
@@ -1145,7 +1154,7 @@ Every `turn_started` entry lists the revision ids of the noise in its brief (SC6
 - **`catalog`** searches the catalog by name or category. It is a read tool for actors and the market.
 - **`pay` to a catalog party:**
   - It lands in that party's implicit account (D5a).
-  - A payment outside the party's price range goes through, and the result says it was unusual (D5o).
+  - A payment outside the party's price range goes through, and the result says it was unusual (D5o). This is policy `catalog_price_range`; build and test `reject` too.
   - A `pay` to a party that is neither in the world nor in the catalog is rejected, and the reason points to `catalog`.
 - **The market role** has its own system template and tools:
   - read: `catalog`, the payments made to catalog parties, `my_inbox` and `my_obligations`
@@ -1203,7 +1212,7 @@ Staff tools are validated like any act tool.
 ## Task 39: Disputes, `reverse` and `adjust`
 
 **Description:**
-- **`dispute`** (actor act tool) contests a past payment the actor made or received. The next day it reaches the staff of the institution whose rules settled the payment (D5b), as a flagged item with the actor's reason.
+- **`dispute`** (actor act tool) contests a past payment the actor made or received. The next day it reaches the staff of the institution policy `dispute_venue` picks (D5b; by default the one whose rules settled the payment, under `payer` the payer's; build and test both), as a flagged item with the actor's reason.
 - **`reverse`** (staff) returns a movement, such as a returned wire or a chargeback, as a new movement linked to the original.
 - **`adjust`** (staff) posts a fee, a correction, or a duplicate and its reversal, each linked to the item it concerns.
 
@@ -1488,14 +1497,14 @@ It runs on the same engine with no change under `worldgen/`. Anything that turns
 1. The root narrator gets the main prompt and the day-0 section of the narrator template. That section asks for a plain first generation: only what the prompt asks for.
 2. The root uses the tree tools to build its part of the world:
    - from Tasks 27-30: spawn children; create entities, accounts, access grants, relationships, catalog entries and stories; brief each child; and set its first review with `schedule_review`
-   - added in this task, for day 0 only (D5n): `declare_institution` and `write_seed`
+   - added in this task, for day 0 only (D5n): `write_seed`, and `declare_institution` under policy `institutions_at_reviews` (build and test both options)
 3. Each new narrator then takes its own day-0 turn, top-down and level by level, with narrators on the same level in parallel. Actors, staff and the market take no day-0 turns.
 
 `manifest/writer.py` serializes the resulting state to `manifest.yaml`, including institutions, catalog, seed, `nodes[].brief` and `nodes[].next_review`. The authoring log goes to `<world_dir>/authoring/<id>/log.jsonl` (D5h).
 
 **Acceptance criteria:**
 - [ ] With `FakeLlm` fixtures, a TARGET_EXAMPLE-like prompt yields a manifest that loads, and the written manifest round-trips, including its institutions, seed and each review date a narrator set
-- [ ] A prompt with no one-offs produces no stories and no noise, and `write_seed` or `declare_institution` called at a review is rejected
+- [ ] A prompt with no one-offs produces no stories and no noise, and `write_seed` called at a review is rejected, as is `declare_institution` under the default `institutions_at_reviews: false`
 - [ ] Levels run in order, and narrators on the same level are in flight at the same time
 
 **Verification:**

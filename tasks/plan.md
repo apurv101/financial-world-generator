@@ -23,11 +23,11 @@ Build order, riskiest first:
 7. **First milestone:** a live 15-day run of the TARGET_EXAMPLE world from a hand-written manifest.
 8. **The rest:** authoring (running the tree to day 0), then prompt revisions, quirks and run history, then the 18-month run.
 
-## Decisions to confirm (Task 0)
+## Decisions (confirmed in Task 0)
 
-These are missing from SPEC.md or were chosen without confirmation. Each has a proposed default. Task 0 records the answers and writes them into SPEC.md as current design.
+On 2026-10-31 the user accepted every answer below as proposed, and added D7 the same day. D3-D7 are written into SPEC.md as current design. D1 and D2 shape Phases 6-7 and stay here. D5d, D5f, D5g, D5h and D5m are implementation choices, so they live here and in the tasks that build them.
 
-| # | Decision | Proposed default | Blocks |
+| # | Decision | Answer | Blocks |
 |---|---|---|---|
 | D1 | **Milestone window** (15 days) | 2021-01-01..2021-01-15, TARGET's own start. The milestone manifest is then the 18-month manifest with an earlier `end`. The window opens mid-flight from the seed:<br>• the December 30 Stripe payout arrives on 01-04<br>• December 30-31 Ramp swipes settle in January (phenomenon 5)<br>• Ramp's December statement is paid by autopay<br>• rent falls due on a bank holiday (01-01)<br>• Alex parks seed money in Treasury on 01-05 and 01-08<br>• payroll falls on a Sunday (01-10)<br>• counsel's Net-30 invoice is due on 01-15<br>• Stripe pays out every business day (phenomenon 2)<br>The first default review is 02-01, so two narrators get `next_review` dates inside the window. The tracer (which spans 03-31) and the Task 46 fixture world cover the month-end mechanisms. | Task 48 |
 | D2 | **Milestone manifest source** | Hand-write `examples/saas_startup`, including the TARGET 2.1 seed. The milestone then judges the run loop on its own. Authoring comes after it and is compared against the hand-written manifest. | Phases 6-7 order |
@@ -35,6 +35,7 @@ These are missing from SPEC.md or were chosen without confirmation. Each has a p
 | D4 | **SPEC choices to confirm** | **(a)** Default model `claude-opus-5-5`. **(b)** The Account and Access model. **(c)** Staff nodes sit outside the tree unless their institution is at the center of the story. **(d)** `jsonschema` becomes a runtime dependency, because `tables.py` checks every row against its table's schema as it renders (SPEC: adding runtime dependencies needs approval). **(e)** Drop "unknown tools" from Success Criterion 1, since no manifest field names a tool. | Tasks 2, 3, 7, 20, 24 |
 | D5 | **Gap-fills** (SPEC is silent on these) | **(a)** A payment to a party lands in that party's first account that supports the payment method. A party with no such account (a catalog merchant, an employee) gets an implicit tracked account. `world_boundary` is only for money from outside the world.<br>**(b)** An act tool emits an initiation event into one clearing account per payment method, and the clearinghouse later emits the linked settlement event. `event.settled` is the settlement event's day. The settlement rules come from the institution holding the initiating side's account (the payer's for `pay`, the payee's for `collect`), or else from the other side's. With neither, the payment settles the same day. A `dispute` goes to the staff of that same institution.<br>**(c)** Events carry `memo` and `details` (a string map from the act tool call: an invoice number, a service period, gallons). Entities carry `fields` (an email, a job title). Declared columns can read all three. The record tools (`bill`, `record_activity`, `authorize`, `revoke`, `annotate`) emit zero-amount events so rows can link to them. An `annotate` event links the event it changes, and that row re-renders.<br>**(d)** Available funds are the posted balance minus pending outflows, or the remaining limit on an account with a limit. An act tool reserves funds when it runs. Act tools don't await, so check-and-reserve is atomic under asyncio.<br>**(e)** `nodes[].brief` holds each node's day-0 brief. Authoring happens at the start of day 0, and day 0's turns follow it.<br>**(f)** The live prompt history is `<world_dir>/prompt_history.json`. A revision id is a content hash, so ids exist before that file does.<br>**(g)** A deviation is an `answer_obligation` whose decision isn't the agreed `pay` or `collect`, or that moves a different amount (when the terms fix one) or on a different day. It drives `runs tail --deviations-only` and the deviation counts.<br>**(h)** `worldgen author` writes its log to `<world_dir>/authoring/<id>/log.jsonl`, in the same format as a run log.<br>**(i)** Users edit prompts in the manifest, and `simulate` records each changed prompt as a `user` revision. `worldgen prompts history\|revert` lists and reverts revisions.<br>**(j)** `default_chapter` is `week`, `month` or `quarter`: the first day of the next calendar week (a Monday), month or quarter after the review day. For a narrator's first review, it counts from the start day.<br>**(k)** Suppose an escalation is made while a review that covers the parent is under way, and the parent hasn't yet read its children's reports. Then it is read in that review and moves no date. Otherwise the parent's next review moves to the next day if it was later. The `escalated` entry records which of the two applied.<br>**(l)** A report turn uses the node's usual system prompt and tools, so the prompt cache still holds. Its act tools and `send_message` are rejected with a reason, because acting happens in the day's own turn.<br>**(m)** The engine ships two calendars: `us_federal` (Federal Reserve holidays, computed in code) and `every_day`.<br>**(n)** `write_seed` and `declare_institution` work only on day 0. The other tree tools work on day 0 and at reviews.<br>**(o)** A payment to a catalog party outside its price range goes through, and the tool result says it was unusual.<br>**(p)** A tree tool call with a list is applied all or nothing, and a rejection names every failing item. | Tasks 1, 3, 9, 10, 15, 16, 18, 26, 28, 29, 37, 50, 53 |
 | D6 | **Overview and subagents** | The overview is the CLI. `run_started` lists every seed node (role, parent, `stands_for`), so `runs tail` opens with the starting tree. `runs show` prints the tree with its spawns and retirements. A subagent is a node a narrator spawns with `spawn_child`: a new participant in the world, which can be a narrator, an actor, or a staff node inside the tree. Actors don't spawn. | Tasks 11, 25, 29 |
+| D7 | **Preferences are policies** (user, 2026-10-31) | Every rule that is our preference, not a real-world fact or a manifest declaration, is a switchable policy (SPEC: Policies). Each one is a file in `worldgen/policies/` whose docstring starts "Our preference:", with a comment on every option. The world's `config.policies` picks the options, and the code that applies a policy names it in a comment. The defaults are the D3 and D5 answers. Every option in the SPEC table is built and tested by the task that builds the rule (see the policy-to-task map). | Task 3 onward |
 
 ## Architecture Decisions
 
@@ -69,6 +70,7 @@ These are missing from SPEC.md or were chosen without confirmation. Each has a p
 - **Conservation by construction.** Every event moves money between two accounts. Per-method clearing accounts hold money in flight (D5b), including the seed's. `verify` re-checks conservation on every run, and hypothesis tests cover act tools and mechanisms.
 - **Obligations follow their direction.** A push obligation goes to the payer's handler, who answers with `pay`. A pull obligation goes to the payee's handler, who answers with `collect` under a mandate. Either way, the payment method comes from the terms and the handler names the account. The market handles the side of a catalog party.
 - **Institutions are data.** `institutions/institution.py` runs one declaration. Each mechanism is one engine class that the declaration configures, and `tables.py` renders rows from declared column sources. No file in `worldgen/` names an institution, industry, payment method or relationship type. A test from Task 2 checks this against every such name in `examples/`.
+- **Policies (D7).** A preference is never an inline constant or branch. `manifest/policies.py` holds the `Policies` model, with one field per policy, typed by that policy's enum (or a number) and defaulting to our preference. The task that builds a rule adds its policy file, its field and its docs entry, and tests every option. Code that applies a policy takes `Policies` through its constructor and comments the branch with the policy's name.
 - **Updatable rows.** Rows are keyed by id, and rendering an id again replaces the row. This covers:
   - posting a movement on settlement
   - moving a payout from `in_transit` to `paid`
@@ -210,6 +212,25 @@ These are missing from SPEC.md or were chosen without confirmation. Each has a p
 | 13 isolation | 17, 17b, 31, 32, 37, 49 |
 | 14 tree rules | 26-31 |
 
+## Policy to task map
+
+| Policy | Built in | Notes |
+|---|---|---|
+| `default_chapter` | 3 (field), 9 (dates) | |
+| `settlement_rules` | 15 | `payee` and the `collect` side are tested again in 33 |
+| `available_funds` | 16 | |
+| `receiving_account` | 16 | `named` takes a `to_account` in `pay` and refunds return to their source. Terms gain `to_account` in 5, used in 18; bills gain it in 34 |
+| `obligation_horizon_days` | 17 | |
+| `obligations_in_brief` | 17b | |
+| `unanswered_obligation` | 18 | |
+| `idle_turns` | 19 | measured both ways in 49 |
+| `report_turn_tools` | 26 | `send_message` part in 32 |
+| `escalation_in_review` | 28 | |
+| `list_calls` | 29 | |
+| `catalog_price_range` | 37 | |
+| `dispute_venue` | 39 | |
+| `institutions_at_reviews` | 50 | |
+
 ## Parallelization
 
 - **Must be sequential:** the core, Tasks 2-23. Within it, Tasks 9 and 12 depend only on the scaffold and Task 11 only on Task 3, so they can run alongside the rest of the manifest models (Tasks 4-8).
@@ -242,5 +263,4 @@ These are missing from SPEC.md or were chosen without confirmation. Each has a p
 
 ## Open Questions
 
-- D1-D6 above. D4 and D5 are needed before Task 1 (D5c shapes the column vocabulary). D6 is needed before Task 11, and D1 and D2 by Phase 6.
 - Any change to the mechanism set, the act tools or the column vocabulary that Tasks 1 and 1b propose. These are decided at Checkpoint 0.
