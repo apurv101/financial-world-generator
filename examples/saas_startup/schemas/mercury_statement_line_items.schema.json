@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mercury_statement_line_items.schema.json",
+  "description": "Written only by Mercury, from events on its own accounts. Validates mercury_statement_line_items.json, an array of rows.",
+  "title": "mercury_statement_line_items",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "statement_month": {
+        "$ref": "common.schema.json#/$defs/month"
+      },
+      "account_name": {
+        "type": "string"
+      },
+      "date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "description": {
+        "type": "string"
+      },
+      "amount": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "running_balance": {
+        "$ref": "common.schema.json#/$defs/money"
+      }
+    },
+    "required": [
+      "id",
+      "statement_month",
+      "account_name",
+      "date",
+      "description",
+      "amount",
+      "running_balance"
+    ],
+    "additionalProperties": false
+  }
+}

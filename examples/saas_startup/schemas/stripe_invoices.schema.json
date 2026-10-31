@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "stripe_invoices.schema.json",
+  "description": "Written only by Stripe, from events on its own accounts. Validates stripe_invoices.json, an array of rows.",
+  "title": "stripe_invoices",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "invoice_number": {
+        "type": "string"
+      },
+      "customer_email": {
+        "type": "string"
+      },
+      "customer_name": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "invoice_date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "service_period_start": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "service_period_end": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "amount_due": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "paid",
+          "open",
+          "void"
+        ]
+      }
+    },
+    "required": [
+      "id",
+      "invoice_number",
+      "customer_email",
+      "invoice_date",
+      "service_period_start",
+      "service_period_end",
+      "amount_due",
+      "status"
+    ],
+    "additionalProperties": false
+  }
+}

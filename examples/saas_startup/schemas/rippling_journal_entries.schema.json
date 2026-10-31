@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rippling_journal_entries.schema.json",
+  "description": "Written only by Rippling, from events on its own accounts. Validates rippling_journal_entries.json, an array of rows.",
+  "title": "rippling_journal_entries",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "entry_date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "type": {
+        "const": "Payroll Journal Entry"
+      },
+      "num": {
+        "type": "integer",
+        "description": "Journal number, e.g. 18, 19"
+      },
+      "description": {
+        "type": "string"
+      },
+      "account": {
+        "type": "string",
+        "description": "The company's account name as set up in Rippling, e.g. 61100 - Salaries"
+      },
+      "debit": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/money"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "credit": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/money"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "id",
+      "entry_date",
+      "type",
+      "num",
+      "description",
+      "account"
+    ],
+    "additionalProperties": false
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ramp_statements.schema.json",
+  "description": "Written only by Ramp, from events on its own accounts. Validates ramp_statements.json, an array of rows.",
+  "title": "ramp_statements",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "statement_month": {
+        "$ref": "common.schema.json#/$defs/month"
+      },
+      "period_start": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "period_end": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "opening_balance": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "new_charges": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "payments_and_credits": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "ending_balance": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "autopay_date": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/date"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "id",
+      "statement_month",
+      "period_start",
+      "period_end",
+      "opening_balance",
+      "new_charges",
+      "payments_and_credits",
+      "ending_balance"
+    ],
+    "additionalProperties": false
+  }
+}

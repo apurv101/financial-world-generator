@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "stripe_payouts.schema.json",
+  "description": "Written only by Stripe, from events on its own accounts. Validates stripe_payouts.json, an array of rows.",
+  "title": "stripe_payouts",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "payout_date": {
+        "$ref": "common.schema.json#/$defs/date",
+        "description": "Date initiated by Stripe"
+      },
+      "arrival_date": {
+        "$ref": "common.schema.json#/$defs/date",
+        "description": "Date settled in Mercury Checking X0666"
+      },
+      "gross_charges": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "fees_deducted": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "refunds_deducted": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "net_payout_amount": {
+        "$ref": "common.schema.json#/$defs/money",
+        "description": "Positive for deposit, negative for expense pull"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "paid",
+          "in_transit"
+        ]
+      }
+    },
+    "required": [
+      "id",
+      "payout_date",
+      "arrival_date",
+      "gross_charges",
+      "fees_deducted",
+      "refunds_deducted",
+      "net_payout_amount",
+      "status"
+    ],
+    "additionalProperties": false
+  }
+}

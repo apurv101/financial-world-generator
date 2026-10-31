@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "stripe_refunds.schema.json",
+  "description": "Written only by Stripe, from events on its own accounts. Validates stripe_refunds.json, an array of rows.",
+  "title": "stripe_refunds",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "charge_id": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "x-references": "stripe_charges.id"
+      },
+      "refund_date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "amount": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "reason": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "payout_id": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "x-references": "stripe_payouts.id"
+      }
+    },
+    "required": [
+      "id",
+      "refund_date",
+      "amount"
+    ],
+    "additionalProperties": false
+  }
+}

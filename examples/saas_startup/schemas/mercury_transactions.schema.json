@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mercury_transactions.schema.json",
+  "description": "Written only by Mercury, from events on its own accounts. Validates mercury_transactions.json, an array of rows.",
+  "title": "mercury_transactions",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "account_name": {
+        "type": "string",
+        "enum": [
+          "Mercury Checking X0666",
+          "Mercury Checking X3354",
+          "Mercury Treasury"
+        ]
+      },
+      "transaction_date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "posted_date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "description": {
+        "type": "string"
+      },
+      "amount": {
+        "$ref": "common.schema.json#/$defs/money",
+        "description": "Positive for deposits, negative for withdrawals"
+      },
+      "transaction_type": {
+        "type": "string",
+        "enum": [
+          "ACH Credit",
+          "ACH Debit",
+          "Wire",
+          "Internal Transfer",
+          "Interest",
+          "Fee"
+        ]
+      },
+      "counterparty_name": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "id",
+      "account_name",
+      "transaction_date",
+      "posted_date",
+      "description",
+      "amount",
+      "transaction_type"
+    ],
+    "additionalProperties": false
+  }
+}

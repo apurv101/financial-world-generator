@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ramp_card_transactions.schema.json",
+  "description": "Written only by Ramp, from events on its own accounts. Validates ramp_card_transactions.json, an array of rows.",
+  "title": "ramp_card_transactions",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "cardholder_name": {
+        "type": "string"
+      },
+      "cardholder_role": {
+        "type": "string"
+      },
+      "swipe_date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "transaction_date": {
+        "$ref": "common.schema.json#/$defs/date",
+        "description": "Settlement date on Ramp"
+      },
+      "merchant_name": {
+        "type": "string"
+      },
+      "amount": {
+        "$ref": "common.schema.json#/$defs/money",
+        "description": "Positive for spend, negative for merchant refunds"
+      },
+      "ramp_category": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Noisy platform category hint"
+      },
+      "memo": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Human-entered memo (may be null, helpful, or personal admission)"
+      },
+      "statement_id": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "x-references": "ramp_statements.id"
+      }
+    },
+    "required": [
+      "id",
+      "cardholder_name",
+      "cardholder_role",
+      "swipe_date",
+      "transaction_date",
+      "merchant_name",
+      "amount"
+    ],
+    "additionalProperties": false
+  }
+}

@@ -77,10 +77,10 @@ Memos on Ramp swipes range from clear ("Client dinner with Acme VP"), to terse, 
 These are entities too. Declare each with the payment methods it handles, its mechanics and its tables in section 5. Each writes only its own tables, from events on its own accounts, and has a staff node that decides situations: holding a payout for review, returning a wire, posting a duplicate and reversing it.
 
 - **Stripe:** invoices, card charges, refunds and payouts. Fee is `2.9% + $0.30` per charge. Charges become available about two days after they are made and are swept into a payout each business day, so `Deposit - STRIPE` lands in Mercury almost every business day, usually for `$35` to `$500` in early 2021†. If refunds exceed charges, Stripe pulls the difference by ACH from Mercury.
-- **Ramp:** card transactions and monthly statements. Charges settle 1-3 days after the swipe. Statements close at a month-end cutoff and are paid by autopay from Mercury X0666.
+- **Ramp:** card transactions and monthly statements. Charges settle 1-3 days after the swipe. Statements close at a month-end cutoff and are paid by autopay from Mercury X0666. Now and then Ramp posts a merchant's charge twice and reverses the duplicate a few days later.
 - **Rippling:** payroll journal entries on the 10th and 26th, numbered in sequence (for example `JE #18` on `2021-03-10` and `JE #19` on `2021-03-26`), with matching ACH debits from Mercury for net pay and taxes. Each line's `account` is the company's own account name as set up in Rippling (`61100 - Salaries`, `61200 - Employer Payroll Tax`, `11100 - Mercury Checking X0666`).
 - **Mercury:** settled bank lines for its three accounts, monthly statements, month-end interest (for example `Interest Accrual` of `$0.82` on checking†; Treasury earns a few hundred dollars a month, such as `$444.98` for January 2021†) and service fees. It sees only cash that has settled.
-- **Merchants:** the catalog merchants people buy from (airlines, restaurants, Amazon, Apple) act through the market: they refund returns, and now and then charge a card twice and reverse it a few days later.
+- **Merchants:** the catalog merchants people buy from (airlines, restaurants, Amazon, Apple) act through the market: they refund returns.
 
 ## 4. Relationships and money flows
 
@@ -493,7 +493,7 @@ Because each entity acts on its own schedule through channels with real delays, 
 | **4. Executive and employee personal commingling** | A weekend trip produces swipes at `APPLE STORE` and `EQUINOX` on Ramp and a personal car lease wired from Mercury X0666, mixed in with normal weekday business travel |
 | **5. Ramp swipe-to-settlement cutoff lag** | A card swipe on March 30 (`swipe_date = 2021-03-30`) settles on April 1 (`transaction_date = 2021-04-01`), so it lands on the next month's Ramp statement |
 
-Further messiness the generator should allow: inconsistent vendor descriptors across months (from each merchant's descriptor variants); late-posted rows from staff holding a payout or returning a wire; duplicates from a merchant charging twice and reversing it a few days later; blank or misleading memos, some added days after the swipe; and customers who pay late, short-pay or send a corrective wire.
+Further messiness the generator should allow: inconsistent vendor descriptors across months (from each merchant's descriptor variants); late-posted rows from staff holding a payout or returning a wire; duplicate card charges that Ramp posts and reverses a few days later; blank or misleading memos, some added days after the swipe; and customers who pay late, short-pay or send a corrective wire.
 
 ### 6.1 Coverage: kinds of events and stories
 
@@ -503,8 +503,8 @@ Beyond the five phenomena, the world should show events of these kinds over its 
 - **Enterprise customers:** annual prepays by wire or ACH, slow approvals, a late payment, a short payment followed by a corrective wire, a mid-term expansion, a renewal.
 - **Vendors:** fixed SaaS plans billed to stored Ramp cards, monthly and annual; usage bills that follow what the team used; ads billed each time spend reaches a threshold; rent by ACH or wire; Net-30 legal invoices, some for work done the month before; equipment for hires (laptops, monitors); annual prepayments such as insurance; a vendor raising its price.
 - **People:** payroll on the 10th and 26th; a hire and its first payroll; business travel and client entertainment; personal charges on company cards, some admitted in memos and some left blank; personal payments from company accounts; a personal charge paid back; memos written days after the swipe.
-- **Merchants:** a returned item refunded to a card; a double charge reversed a few days later.
-- **Institutions:** payouts in transit at month end; a change in payout schedule; a Stripe pull and a payout on the same day; a payout held for review; a returned wire; Ramp statements and autopay; monthly interest and fees; large transfers into Treasury and smaller ones back to checking; account labels that differ between places (X3354 as checking or savings).
+- **Merchants:** a returned item refunded to a card.
+- **Institutions:** payouts in transit at month end; a change in payout schedule; a Stripe pull and a payout on the same day; a payout held for review; a returned wire; a duplicate card charge reversed a few days later; Ramp statements and autopay; monthly interest and fees; large transfers into Treasury and smaller ones back to checking; account labels that differ between places (X3354 as checking or savings).
 - **Stories:** the chains in sections 4.1 and 4.2, and others like them for different people and months.
 
 ---

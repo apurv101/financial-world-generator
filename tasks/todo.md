@@ -93,13 +93,13 @@ Update TARGET_EXAMPLE.md only where an answer touches it. Write only the current
 - `examples/saas_startup/schemas/` holds one JSON Schema per table, split from TARGET_EXAMPLE section 5 with no column changed, plus `common.schema.json`.
 
 **Acceptance criteria:**
-- [ ] Every column of every SaaS table has a source from the vocabulary, and none is left as custom
-- [ ] Every institution behavior and money flow in TARGET_EXAMPLE sections 3.4 and 4 maps to a mechanism's config, an act tool or a staff decision:
+- [x] Every column of every SaaS table has a source from the vocabulary, and none is left as custom
+- [x] Every institution behavior and money flow in TARGET_EXAMPLE sections 3.4 and 4 maps to a mechanism's config, an act tool or a staff decision:
   - Stripe's fee, availability delay, daily payouts and negative-balance pulls
   - Ramp's cutoff and autopay
   - Rippling's numbered, balanced journal entries and their Mercury debits
   - Mercury's statements and interest
-- [ ] Anything that does not fit is written up as a proposed change to the mechanism set or the act tools, for the user to decide (SPEC: ask first)
+- [x] Anything that does not fit is written up as a proposed change to the mechanism set or the act tools, for the user to decide (SPEC: ask first)
 
 **Verification:**
 - [ ] Manual: the user reviews the doc and the declarations at Checkpoint 0
@@ -130,7 +130,7 @@ Update TARGET_EXAMPLE.md only where an answer touches it. Write only the current
 
 ## Checkpoint 0: Decisions and language (after Tasks 0-1b)
 - [ ] The user has approved the SPEC diff and the declaration language
-- [ ] Any mechanism or act-tool change the user accepted is written into SPEC.md
+- [ ] Any mechanism or act-tool change the user accepted is written into SPEC.md, and into the tasks that build it (D8: P1-P8, including the market prompt in SPEC's manifest excerpt for P7 and the `receiving_account` default for P8)
 - [ ] SPEC's Manifest Shape excerpt for `institutions` matches the language
 
 ---

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mercury_treasury_records.schema.json",
+  "description": "Written only by Mercury, from events on its own accounts. Validates mercury_treasury_records.json, an array of rows.",
+  "title": "mercury_treasury_records",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "statement_month": {
+        "$ref": "common.schema.json#/$defs/month"
+      },
+      "beginning_balance": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "deposits": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "withdrawals": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "interest_earned": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "ending_balance": {
+        "$ref": "common.schema.json#/$defs/money"
+      }
+    },
+    "required": [
+      "id",
+      "statement_month",
+      "beginning_balance",
+      "deposits",
+      "withdrawals",
+      "interest_earned",
+      "ending_balance"
+    ],
+    "additionalProperties": false
+  }
+}

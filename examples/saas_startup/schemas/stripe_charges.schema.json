@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "stripe_charges.schema.json",
+  "description": "Written only by Stripe, from events on its own accounts. Validates stripe_charges.json, an array of rows.",
+  "title": "stripe_charges",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "invoice_id": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "x-references": "stripe_invoices.id"
+      },
+      "customer_email": {
+        "type": "string"
+      },
+      "charge_date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "amount": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "fee_amount": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "net_amount": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "payout_id": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "x-references": "stripe_payouts.id",
+        "description": "Set once swept into a payout batch"
+      }
+    },
+    "required": [
+      "id",
+      "customer_email",
+      "charge_date",
+      "amount",
+      "fee_amount",
+      "net_amount"
+    ],
+    "additionalProperties": false
+  }
+}

@@ -1,0 +1,228 @@
+# examples/saas_startup: TARGET_EXAMPLE.md expressed as a manifest.
+#
+# For now this holds only the `institutions:` section (Task 1). Later tasks add the rest.
+# The language is described in docs/declaring-an-institution.md, including the additions
+# P1-P8 it needed (section 8).
+#
+# What the declarations expect from the rest of the manifest (written in Task 48):
+#   Mercury:  a_x0666 and a_x3354 (kind checking), a_treasury (kind treasury, with a rate)
+#   Ramp:     a_ramp (kind card, limit, linked: a_x0666), one card instrument per person (P1)
+#   Stripe:   a_stripe (kind processor_balance, linked: a_x0666)
+#   Rippling: a_rippling (kind payroll, limit, linked: a_x0666)
+#   Entities: people with fields.title, customers with fields.email and fields.invoice_prefix,
+#             ent_tax_authority (where payroll taxes go), directional descriptors on Stripe,
+#             Ramp and Rippling (P2)
+#   Terms:    self-serve subscriptions name `to_account: a_stripe` (P4)
+
+institutions:
+  - id: inst_mercury
+    calendar: us_federal
+    methods:
+      ach: {settle_days: [1, 2]}
+      wire: {settle_days: [0, 1]}
+      book: {settle_days: [0, 0]}          # transfers between Mercury accounts
+    mechanisms:
+      statement: {every: month, per: account, by: settled}
+      interest: {on: {rate: present}, basis: daily_balance, day_count: actual_365, post: month_end}
+    tables:
+      mercury_transactions:
+        schema: schemas/mercury_transactions.schema.json
+        rows: {from: postings, when: settled}
+        columns:
+          id: posting.id
+          account_name: account.name
+          transaction_date: event.day
+          posted_date: event.settled
+          description: &mercury_description
+            match:
+              - {when: {action: interest}, value: {const: Interest Accrual}}
+              - {when: {method: book, direction: out}, value: {template: "Transfer to {other_account.name}"}}
+              - {when: {method: book, direction: in}, value: {template: "Transfer from {other_account.name}"}}
+              - {when: {action: adjust}, value: event.memo}
+            else: counterparty.descriptor
+          amount: posting.amount
+          transaction_type:
+            match:
+              - {when: {action: interest}, value: {const: Interest}}
+              - {when: {action: adjust}, value: {const: Fee}}
+              - {when: {method: book}, value: {const: Internal Transfer}}
+              - {when: {method: wire}, value: {const: Wire}}
+              - {when: {method: ach, direction: in}, value: {const: ACH Credit}}
+              - {when: {method: ach, direction: out}, value: {const: ACH Debit}}
+          counterparty_name:
+            match:
+              - {when: {action: [interest, adjust]}, value: null}
+              - {when: {method: book}, value: null}
+            else: counterparty.name
+
+      mercury_statement_line_items:
+        schema: schemas/mercury_statement_line_items.schema.json
+        rows: {from: statement_lines}
+        columns:
+          id: posting.id
+          statement_month: statement.month
+          account_name: {map: account.id, values: {a_x3354: Mercury Savings X3354}, else: account.name}
+          date: event.settled
+          description: *mercury_description
+          amount: posting.amount
+          running_balance: line.running_balance
+
+      mercury_treasury_records:
+        schema: schemas/mercury_treasury_records.schema.json
+        rows: {from: statements, where: {account_kind: treasury}}
+        columns:
+          id: statement.id
+          statement_month: statement.month
+          beginning_balance: statement.opening
+          deposits: {sum: statement.lines, where: {direction: in, action: {not: interest}}, magnitude: true}
+          withdrawals: {sum: statement.lines, where: {direction: out}, magnitude: true}
+          interest_earned: {sum: statement.lines, where: {action: interest}}
+          ending_balance: statement.closing
+
+  - id: inst_ramp
+    calendar: us_federal
+    methods:
+      card: {settle_days: [1, 3], settles_on: any_day}
+      ach: {settle_days: [1, 2]}           # autopay pulls from the linked bank account
+    mechanisms:
+      statement: {every: month, per: account, by: settled}
+      sweep: {after: statement, delay_days: 3, direction: in, amount: statement.closing, method: ach}   # autopay
+    tables:
+      ramp_card_transactions:
+        schema: schemas/ramp_card_transactions.schema.json
+        sign: outflow_positive              # spend is positive, merchant refunds negative
+        rows: {from: postings, when: settled, where: {method: card}}
+        columns:
+          id: posting.id
+          cardholder_name: instrument.issued_to.name
+          cardholder_role: instrument.issued_to.fields.title
+          swipe_date: event.day
+          transaction_date: event.settled
+          merchant_name: counterparty.descriptor
+          amount: posting.amount
+          ramp_category: counterparty.category
+          memo: event.memo
+          statement_id: statement.id
+
+      ramp_statements:
+        schema: schemas/ramp_statements.schema.json
+        sign: outflow_positive              # balances are what the company owes
+        rows: {from: statements}
+        columns:
+          id: statement.id
+          statement_month: statement.month
+          period_start: statement.period_start
+          period_end: statement.period_end
+          opening_balance: statement.opening
+          new_charges: {sum: statement.lines, where: {method: card, direction: out}}
+          payments_and_credits: {sum: statement.lines, where: {direction: in}, magnitude: true}
+          ending_balance: statement.closing
+          autopay_date: statement.sweep.day
+
+  - id: inst_stripe
+    calendar: us_federal
+    methods:
+      card: {settle_days: [0, 0], settles_on: any_day}   # a charge reaches the balance at once; the hold delays availability
+      ach: {settle_days: [1, 2]}           # payouts to, and pulls from, the linked bank account
+    mechanisms:
+      split:
+        fee: {on: {action: collect, method: card}, percent: "2.9", fixed: "0.30", mode: carve, to: own}
+      hold: {on: {action: collect, method: card}, days: 2}
+      sweep: {every: business_day, setting: payout_schedule, direction: both, amount: available, method: ach}   # payouts, and pulls when negative
+      numbering:
+        invoice: {for: {action: [obligation, bill]}, per: payer}
+    tables:
+      stripe_invoices:
+        schema: schemas/stripe_invoices.schema.json
+        rows: {from: records, where: {action: [obligation, bill]}}
+        columns:
+          id: event.id
+          invoice_number: {template: "#{payer.fields.invoice_prefix}-{counter.invoice:04}"}
+          customer_email: payer.fields.email
+          customer_name: payer.name
+          invoice_date: event.day
+          service_period_start: event.details.period_start
+          service_period_end: event.details.period_end
+          amount_due: obligation.amount
+          status: {map: obligation.status, values: {paid: paid, cancelled: void, skipped: void}, else: {const: open}}
+
+      stripe_charges:
+        schema: schemas/stripe_charges.schema.json
+        rows: {from: postings, when: initiated, where: {action: collect, method: card}}
+        columns:
+          id: posting.id
+          invoice_id: obligation.id
+          customer_email: payer.fields.email
+          charge_date: event.day
+          amount: event.amount
+          fee_amount: split.fee
+          net_amount: posting.amount
+          payout_id: sweep.id
+
+      stripe_refunds:
+        schema: schemas/stripe_refunds.schema.json
+        sign: outflow_positive
+        rows: {from: postings, when: initiated, where: {direction: out, method: card, returns: present}}
+        columns:
+          id: posting.id
+          charge_id: returns.id
+          refund_date: event.day
+          amount: posting.amount
+          reason:
+            match:
+              - {when: {action: reverse}, value: {const: dispute}}
+            else: event.memo
+          payout_id: sweep.id
+
+      stripe_payouts:
+        schema: schemas/stripe_payouts.schema.json
+        sign: outflow_positive              # a payout is positive, a pull from the bank negative
+        rows: {from: postings, when: initiated, where: {action: sweep}}
+        columns:
+          id: posting.id
+          payout_date: event.day
+          arrival_date: event.settled
+          gross_charges: {sum: links, where: {action: collect}, of: event.amount}
+          fees_deducted: {sum: links, where: {action: collect}, of: split.fee}
+          refunds_deducted: {sum: links, where: {returns: present}, magnitude: true}
+          net_payout_amount: posting.amount
+          status: {map: event.status, values: {settled: paid}, else: {const: in_transit}}
+
+  - id: inst_rippling
+    calendar: us_federal
+    methods:
+      ach: {settle_days: [0, 1]}           # direct deposit, tax remittance and the bank debits
+    mechanisms:
+      split:
+        withholding: {on: {action: pay, method: ach}, percent: "22.0", mode: carve, to: ent_tax_authority}
+        employer_tax: {on: {action: pay, method: ach}, percent: "12.8", mode: add, to: ent_tax_authority}
+      sweep:
+        when: negative                     # pull what payroll spent from the linked bank account
+        direction: in
+        amount: shortfall
+        method: ach
+        parts:
+          - {memo: Net Pay, amount: {sum: carried, where: {action: pay}, of: split.net}}
+          - {memo: Taxes, amount: rest}
+      numbering:
+        journal: {for: entries}
+    tables:
+      rippling_journal_entries:
+        schema: schemas/rippling_journal_entries.schema.json
+        rows:
+          from: entries
+          group: call
+          where: {account_kind: payroll, direction: out}
+          lines:
+            - {account: {const: 61100 - Salaries}, debit: {sum: group, where: {action: pay}, of: event.amount}, credit: null}
+            - {account: {const: 61200 - Employer Payroll Tax}, debit: {sum: group, where: {leg: employer_tax}, magnitude: true}, credit: null}
+            - {account: {template: "11100 - {account.linked.name}"}, debit: null, credit: {sum: group, magnitude: true}}
+        columns:
+          id: line.id
+          entry_date: group.day
+          type: {const: Payroll Journal Entry}
+          num: counter.journal
+          description: {template: "Payroll {group.day}"}
+          account: line.account
+          debit: line.debit
+          credit: line.credit
