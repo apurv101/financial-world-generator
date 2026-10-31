@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "roadfleet_statements.schema.json",
+  "description": "Written only by RoadFleet, from events on its own accounts. Validates roadfleet_statements.json, an array of rows.",
+  "title": "roadfleet_statements",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "period_start": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "period_end": {
+        "$ref": "common.schema.json#/$defs/date",
+        "description": "A Sunday"
+      },
+      "previous_balance": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "purchases": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "credits": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "payments": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "new_balance": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "autopay_date": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/date"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "required": [
+      "id",
+      "period_start",
+      "period_end",
+      "previous_balance",
+      "purchases",
+      "credits",
+      "payments",
+      "new_balance"
+    ],
+    "additionalProperties": false
+  }
+}

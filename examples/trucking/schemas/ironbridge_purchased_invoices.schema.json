@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ironbridge_purchased_invoices.schema.json",
+  "description": "Written only by Ironbridge Freight Funding, from events on its own accounts. Validates ironbridge_purchased_invoices.json, an array of rows.",
+  "title": "ironbridge_purchased_invoices",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "invoice_number": {
+        "type": "string",
+        "pattern": "^[A-Z]+-\\d{5}$"
+      },
+      "load_number": {
+        "type": "string",
+        "description": "The debtor's load or PO number"
+      },
+      "debtor_name": {
+        "type": "string"
+      },
+      "invoice_date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "invoice_amount": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "advance_amount": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/money"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "purchase_date": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/date"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "Open",
+          "Pending Verification",
+          "Closed",
+          "Short Paid",
+          "Disputed",
+          "Cancelled",
+          "Charged Back"
+        ]
+      },
+      "chargeback_amount": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/money"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Advance charged back to the client under recourse"
+      }
+    },
+    "required": [
+      "id",
+      "invoice_number",
+      "load_number",
+      "debtor_name",
+      "invoice_date",
+      "invoice_amount",
+      "status"
+    ],
+    "additionalProperties": false
+  }
+}

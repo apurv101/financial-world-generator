@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "roadfleet_transactions.schema.json",
+  "description": "Written only by RoadFleet, from events on its own accounts. Validates roadfleet_transactions.json, an array of rows.",
+  "title": "roadfleet_transactions",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "transaction_date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "post_date": {
+        "$ref": "common.schema.json#/$defs/date",
+        "description": "Posting date on RoadFleet"
+      },
+      "card": {
+        "type": "string",
+        "pattern": "^Unit \\d{3}$",
+        "description": "The truck the card belongs to"
+      },
+      "driver_id": {
+        "oneOf": [
+          {
+            "type": "string",
+            "pattern": "^\\d{4}$"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Entered at the pump"
+      },
+      "odometer": {
+        "oneOf": [
+          {
+            "type": "string",
+            "pattern": "^\\d{1,7}$"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Entered at the pump; null when the driver skipped it"
+      },
+      "merchant_name": {
+        "type": "string"
+      },
+      "city": {
+        "type": "string"
+      },
+      "state": {
+        "type": "string",
+        "pattern": "^[A-Z]{2}$"
+      },
+      "product": {
+        "type": "string",
+        "enum": [
+          "DIESEL",
+          "DEF",
+          "CASH ADVANCE",
+          "LUMPER",
+          "OTHER"
+        ]
+      },
+      "gallons": {
+        "oneOf": [
+          {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d{3}$"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Null for cash advances, lumper payments and other products"
+      },
+      "price_per_gallon": {
+        "oneOf": [
+          {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d{3}$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "amount": {
+        "$ref": "common.schema.json#/$defs/money",
+        "description": "Positive for purchases, negative for credits"
+      },
+      "statement_id": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "x-references": "roadfleet_statements.id",
+        "description": "Set when the weekly statement closes"
+      }
+    },
+    "required": [
+      "id",
+      "transaction_date",
+      "post_date",
+      "card",
+      "merchant_name",
+      "city",
+      "state",
+      "product",
+      "amount"
+    ],
+    "additionalProperties": false
+  }
+}

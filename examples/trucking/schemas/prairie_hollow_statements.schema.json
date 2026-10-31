@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "prairie_hollow_statements.schema.json",
+  "description": "Written only by Prairie Hollow Bank, from events on its own accounts. Validates prairie_hollow_statements.json, an array of rows.",
+  "title": "prairie_hollow_statements",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "account_name": {
+        "type": "string",
+        "enum": [
+          "Business Checking ••7731"
+        ]
+      },
+      "statement_month": {
+        "$ref": "common.schema.json#/$defs/month"
+      },
+      "period_start": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "period_end": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "beginning_balance": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "deposits_and_credits": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "checks_paid": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "other_debits": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "service_charges": {
+        "$ref": "common.schema.json#/$defs/money"
+      },
+      "ending_balance": {
+        "$ref": "common.schema.json#/$defs/money"
+      }
+    },
+    "required": [
+      "id",
+      "account_name",
+      "statement_month",
+      "period_start",
+      "period_end",
+      "beginning_balance",
+      "deposits_and_credits",
+      "checks_paid",
+      "other_debits",
+      "service_charges",
+      "ending_balance"
+    ],
+    "additionalProperties": false
+  }
+}

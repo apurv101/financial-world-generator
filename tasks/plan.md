@@ -264,4 +264,10 @@ On 2026-10-31 the user accepted every answer below as proposed, and added D7 the
 
 ## Open Questions
 
-- Any change to the mechanism set, the act tools or the column vocabulary that Tasks 1 and 1b propose. These are decided at Checkpoint 0.
+- Trucking's six proposed additions, in `docs/declaring-an-institution.md` section 8, are decided at Checkpoint 0:
+  - **T1:** `posting.balance_after`
+  - **T2:** `instrument.name`
+  - **T3:** weekly statements and sweeps name their weekday
+  - **T4:** a bill's `to_account` is read under every policy
+  - **T5:** an `advance` mechanism, with a partial `reverse`
+  - **T6:** details a table reads are checked at the call

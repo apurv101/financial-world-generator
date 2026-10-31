@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "prairie_hollow_transactions.schema.json",
+  "description": "Written only by Prairie Hollow Bank, from events on its own accounts. Validates prairie_hollow_transactions.json, an array of rows.",
+  "title": "prairie_hollow_transactions",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "account_name": {
+        "type": "string",
+        "enum": [
+          "Business Checking ••7731"
+        ]
+      },
+      "posted_date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "description": {
+        "type": "string"
+      },
+      "check_number": {
+        "oneOf": [
+          {
+            "type": "integer",
+            "minimum": 1
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Set on checks the account wrote"
+      },
+      "amount": {
+        "$ref": "common.schema.json#/$defs/money",
+        "description": "Positive for deposits, negative for withdrawals"
+      },
+      "running_balance": {
+        "$ref": "common.schema.json#/$defs/money",
+        "description": "The account's balance after this transaction posted"
+      }
+    },
+    "required": [
+      "id",
+      "account_name",
+      "posted_date",
+      "description",
+      "amount",
+      "running_balance"
+    ],
+    "additionalProperties": false
+  }
+}

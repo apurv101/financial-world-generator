@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ironbridge_reserve_activity.schema.json",
+  "description": "Written only by Ironbridge Freight Funding, from events on its own accounts. Validates ironbridge_reserve_activity.json, an array of rows.",
+  "title": "ironbridge_reserve_activity",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "$ref": "common.schema.json#/$defs/uuid"
+      },
+      "date": {
+        "$ref": "common.schema.json#/$defs/date"
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "Collection",
+          "Reserve Release",
+          "Adjustment",
+          "Unapplied Cash"
+        ]
+      },
+      "debtor_name": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "invoice_id": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "x-references": "ironbridge_purchased_invoices.id"
+      },
+      "gross_amount": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/money"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "What the debtor paid"
+      },
+      "fee_amount": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/money"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "advance_recovered": {
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/money"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "amount": {
+        "$ref": "common.schema.json#/$defs/money",
+        "description": "Net change to the reserve: positive for collections, negative for releases"
+      },
+      "reserve_balance": {
+        "$ref": "common.schema.json#/$defs/money"
+      }
+    },
+    "required": [
+      "id",
+      "date",
+      "type",
+      "amount",
+      "reserve_balance"
+    ],
+    "additionalProperties": false
+  }
+}

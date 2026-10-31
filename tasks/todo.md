@@ -117,9 +117,9 @@ Update TARGET_EXAMPLE.md only where an answer touches it. Write only the current
 - The doc's two coverage tables gain the trucking tables and money flows.
 
 **Acceptance criteria:**
-- [ ] Every column of every trucking table has a source from the vocabulary. Any addition the vocabulary needs is written up for the user, not quietly added.
-- [ ] Each trucking behavior maps to a mechanism's config, an act tool or a staff decision: factoring advances, factoring fees, reserve releases, and fuel-card statements and autopay
-- [ ] The coverage tables cover both industries
+- [x] Every column of every trucking table has a source from the vocabulary. Any addition the vocabulary needs is written up for the user, not quietly added.
+- [x] Each trucking behavior maps to a mechanism's config, an act tool or a staff decision: factoring advances, factoring fees, reserve releases, and fuel-card statements and autopay
+- [x] The coverage tables cover both industries
 
 **Verification:**
 - [ ] Manual: the user reviews the trucking declarations at Checkpoint 0
@@ -130,7 +130,8 @@ Update TARGET_EXAMPLE.md only where an answer touches it. Write only the current
 
 ## Checkpoint 0: Decisions and language (after Tasks 0-1b)
 - [ ] The user has approved the SPEC diff and the declaration language
-- [ ] Any mechanism or act-tool change the user accepted is written into SPEC.md, and into the tasks that build it (D8: P1-P8, including the market prompt in SPEC's manifest excerpt for P7 and the `receiving_account` default for P8)
+- [ ] The user has decided each trucking addition T1-T6 (`docs/declaring-an-institution.md` section 8)
+- [ ] Any mechanism or act-tool change the user accepted is written into SPEC.md, and into the tasks that build it (D8: P1-P8, including the market prompt in SPEC's manifest excerpt for P7 and the `receiving_account` default for P8; and each accepted T1-T6, with a new Phase 5 task for the advance mechanism before Task 47 if T5 is accepted)
 - [ ] SPEC's Manifest Shape excerpt for `institutions` matches the language
 
 ---

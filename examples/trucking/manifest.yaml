@@ -1,0 +1,171 @@
+# examples/trucking: PROMPT.md expressed as a manifest.
+#
+# For now this holds only the `institutions:` section (Task 1b). Task 47 adds the rest.
+# The language is described in docs/declaring-an-institution.md. These declarations also
+# use the additions T1-T6 that trucking needed (section 8), which await the user's decision
+# at Checkpoint 0; each use is marked.
+#
+# What the declarations expect from the rest of the manifest (written in Task 47):
+#   Prairie Hollow: a_checking (kind checking, name "Business Checking ••7731", methods ach, wire, check)
+#   RoadFleet:      a_roadfleet (kind fuel_card, limit, linked: a_checking), one card instrument per
+#                   truck, issued to co_self and named "Unit 101" to "Unit 106" (P1)
+#   Ironbridge:     a_ib_reserve (kind factoring_reserve, methods ach, check, linked: a_checking)
+#   Entities:       drivers with fields.driver_id; co_self with fields.invoice_prefix "ORF-";
+#                   directional descriptors on Ironbridge and RoadFleet (P2); truck stops in the
+#                   catalog with location-style descriptors
+#   Bills:          factored invoices name `to_account: a_ib_reserve`, unfactored ones
+#                   `to_account: a_checking` (T4), with details.load_number (T6)
+#   Access:         each driver on a_roadfleet with card; Maria on a_checking with ach, wire, check
+
+institutions:
+  - id: inst_prairie_hollow
+    calendar: us_federal
+    methods:
+      ach: {settle_days: [1, 2]}
+      wire: {settle_days: [0, 0]}
+      check: {settle_days: [3, 10]}        # written or mailed, then cleared or credited; clears out of order
+    mechanisms:
+      statement: {every: month, per: account, by: settled}
+      split:
+        wire_fee: {on: {method: wire, direction: out}, fixed: "25.00", mode: add, to: own}
+      numbering:
+        check: {for: {method: check, direction: out}, per: account}
+    tables:
+      prairie_hollow_transactions:
+        schema: schemas/prairie_hollow_transactions.schema.json
+        rows: {from: postings, when: settled}
+        columns:
+          id: posting.id
+          account_name: account.name
+          posted_date: event.settled
+          description:
+            match:
+              - {when: {method: check, direction: out}, value: {template: "CHECK {counter.check}"}}
+              - {when: {method: check, direction: in}, value: {const: REMOTE DEPOSIT}}
+              - {when: {leg: wire_fee}, value: {const: OUTGOING WIRE FEE}}
+              - {when: {action: adjust}, value: event.memo}
+              - {when: {method: wire, direction: out}, value: {template: "WIRE OUT {counterparty.name}"}}
+              - {when: {method: wire, direction: in}, value: {template: "WIRE IN {counterparty.name}"}}
+              - {when: {action: advance}, value: {template: "{counterparty.descriptor} DES:ADVANCE"}}
+              - {when: {action: sweep, direction: in}, value: {template: "{counterparty.descriptor} DES:RESERVE"}}
+            else: counterparty.descriptor
+          check_number: counter.check
+          amount: posting.amount
+          running_balance: posting.balance_after      # T1
+
+      prairie_hollow_statements:
+        schema: schemas/prairie_hollow_statements.schema.json
+        rows: {from: statements}
+        columns:
+          id: statement.id
+          account_name: account.name
+          statement_month: statement.month
+          period_start: statement.period_start
+          period_end: statement.period_end
+          beginning_balance: statement.opening
+          deposits_and_credits: {sum: statement.lines, where: {direction: in}}
+          checks_paid: {sum: statement.lines, where: {method: check, direction: out}, magnitude: true}
+          other_debits: {sum: statement.lines, where: {direction: out, method: {not: check}, action: {not: [adjust, split]}}, magnitude: true}
+          service_charges: {sum: statement.lines, where: {direction: out, action: [adjust, split]}, magnitude: true}
+          ending_balance: statement.closing
+
+  - id: inst_roadfleet
+    calendar: us_federal
+    methods:
+      card: {settle_days: [1, 2], settles_on: any_day}
+      ach: {settle_days: [1, 1]}           # autopay pulls from the linked checking account
+    mechanisms:
+      statement: {every: week, close_day: sunday, per: account, by: settled}                  # T3
+      sweep: {after: statement, delay_days: 2, direction: in, amount: statement.closing, method: ach}   # autopay
+    tables:
+      roadfleet_transactions:
+        schema: schemas/roadfleet_transactions.schema.json
+        sign: outflow_positive              # purchases are positive
+        rows: {from: postings, when: settled, where: {method: card}}
+        columns:
+          id: posting.id
+          transaction_date: event.day
+          post_date: event.settled
+          card: instrument.name             # T2
+          driver_id: actor.fields.driver_id
+          odometer: event.details.odometer  # details: T6
+          merchant_name: counterparty.descriptor
+          city: event.details.city
+          state: event.details.state
+          product: event.details.product
+          gallons: event.details.gallons
+          price_per_gallon: event.details.price_per_gallon
+          amount: posting.amount
+          statement_id: statement.id
+
+      roadfleet_statements:
+        schema: schemas/roadfleet_statements.schema.json
+        sign: outflow_positive              # balances are what the company owes
+        rows: {from: statements}
+        columns:
+          id: statement.id
+          period_start: statement.period_start
+          period_end: statement.period_end
+          previous_balance: statement.opening
+          purchases: {sum: statement.lines, where: {method: card, direction: out}}
+          credits: {sum: statement.lines, where: {direction: in, action: {not: sweep}}, magnitude: true}
+          payments: {sum: statement.lines, where: {action: sweep}, magnitude: true}
+          new_balance: statement.closing
+          autopay_date: statement.sweep.day
+
+  - id: inst_ironbridge
+    calendar: us_federal
+    methods:
+      ach: {settle_days: [1, 1]}           # advances, reserve releases, charge-backs, debtors' ACH payments
+      check: {settle_days: [3, 7]}         # debtors' checks mailed to the lockbox
+    mechanisms:
+      advance: {on: {action: bill}, percent: "90", method: ach}      # T5: buys each invoice remitted to the account
+      split:
+        fee: {on: {direction: in, obligation: present}, percent: "3.0", mode: carve, to: own}
+      sweep: {every: week, day: friday, direction: out, amount: available, method: ach}   # T3: reserve release
+      numbering:
+        invoice: {for: {action: bill}, per: account}
+    tables:
+      ironbridge_purchased_invoices:
+        schema: schemas/ironbridge_purchased_invoices.schema.json
+        rows: {from: records, where: {action: bill}}
+        columns:
+          id: event.id
+          invoice_number: {template: "{payee.fields.invoice_prefix}{counter.invoice:05}"}
+          load_number: event.details.load_number
+          debtor_name: payer.name
+          invoice_date: event.day
+          invoice_amount: obligation.amount
+          advance_amount: advance.amount    # T5
+          purchase_date: advance.day
+          status:
+            map: obligation.status
+            values: {paid: Closed, short_paid: Short Paid, disputed: Disputed, cancelled: Cancelled}
+            else: {map: advance.status, values: {held: Pending Verification, charged_back: Charged Back}, else: {const: Open}}
+          chargeback_amount: advance.charged_back
+
+      ironbridge_reserve_activity:
+        schema: schemas/ironbridge_reserve_activity.schema.json
+        rows: {from: postings, when: settled}
+        columns:
+          id: posting.id
+          date: event.settled
+          type:
+            match:
+              - {when: {action: sweep}, value: {const: Reserve Release}}
+              - {when: {action: adjust}, value: {const: Adjustment}}
+              - {when: {obligation: present}, value: {const: Collection}}
+            else: {const: Unapplied Cash}
+          debtor_name:
+            match:
+              - {when: {action: [sweep, adjust]}, value: null}
+            else: counterparty.name
+          invoice_id: obligation.id
+          gross_amount:
+            match:
+              - {when: {action: [sweep, adjust]}, value: null}
+            else: event.amount
+          fee_amount: split.fee
+          advance_recovered: advance.recovered      # T5
+          amount: posting.amount
+          reserve_balance: posting.balance_after    # T1
