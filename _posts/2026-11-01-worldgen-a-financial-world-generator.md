@@ -48,7 +48,7 @@ JSON tables per institution  +  an event log explaining every row
 
 **The engine checks every action on the spot.** It checks that the actor can use the account and the payment method, that a collection has the payer's permission, that the funds are there, and that money is conserved. A rejected payment goes back to the agent with the reason, so it can move money from savings and try again.
 
-**Institutions are declared, not coded.** A bank, card issuer, processor or factoring company is written in the manifest. The declaration picks the payment methods the institution handles, sets up generic mechanisms (settlement delays, fees, holds, payouts, statements, interest, numbering, merchant descriptors), and says how each output table is built. A new institution or a new industry needs a manifest, not code. See [`docs/declaring-an-institution.md`](https://github.com/apoorvbuilds/financial-world-generator/blob/main/docs/declaring-an-institution.md).
+**Institutions are declared, not coded.** A bank, card issuer, processor or factoring company is written in the manifest. The declaration picks the payment methods the institution handles, sets up generic mechanisms (settlement delays, fees, holds, payouts, statements, interest, numbering, merchant descriptors), and says how each output table is built. A new institution or a new industry needs a manifest, not code. See [`docs/declaring-an-institution.md`](https://github.com/rottencontext/financial-world-generator/blob/main/docs/declaring-an-institution.md).
 
 **Edit any prompt and rerun.** Every person, relationship, story and one-off ("pays late once, then short-pays") is a prompt in the manifest. Change one, run again, and the data is regenerated.
 
@@ -80,8 +80,8 @@ Runs are **non-deterministic by design**. Two runs of the same world can differ,
 
 | World | What it is | Institutions |
 |---|---|---|
-| [`examples/saas_startup`](https://github.com/apoorvbuilds/financial-world-generator/tree/main/examples/saas_startup) | A small B2B SaaS company, 2021-2022, modeled on the [AccountingBench](https://accounting.penrose.com/) company. [`TARGET_EXAMPLE.md`](https://github.com/apoorvbuilds/financial-world-generator/blob/main/TARGET_EXAMPLE.md) is its main prompt. | Mercury (bank), Ramp (cards), Stripe (processor), Rippling (payroll) |
-| [`examples/trucking`](https://github.com/apoorvbuilds/financial-world-generator/tree/main/examples/trucking) | Ozark Ridge Freight, a six-truck carrier in Missouri, 2024. It shows that a new industry needs no code change. | Prairie Hollow Bank, RoadFleet fuel card, Ironbridge Freight Funding (factoring) |
+| [`examples/saas_startup`](https://github.com/rottencontext/financial-world-generator/tree/main/examples/saas_startup) | A small B2B SaaS company, 2021-2022, modeled on the [AccountingBench](https://accounting.penrose.com/) company. [`TARGET_EXAMPLE.md`](https://github.com/rottencontext/financial-world-generator/blob/main/TARGET_EXAMPLE.md) is its main prompt. | Mercury (bank), Ramp (cards), Stripe (processor), Rippling (payroll) |
+| [`examples/trucking`](https://github.com/rottencontext/financial-world-generator/tree/main/examples/trucking) | Ozark Ridge Freight, a six-truck carrier in Missouri, 2024. It shows that a new industry needs no code change. | Prairie Hollow Bank, RoadFleet fuel card, Ironbridge Freight Funding (factoring) |
 
 Each example so far holds its institution declarations (`manifest.yaml`) and a JSON Schema for every output table (`schemas/`).
 
@@ -103,10 +103,10 @@ A run is never edited after it finishes, and later edits to the world don't chan
 ## Where we are
 
 **Done**
-- [`SPEC.md`](https://github.com/apoorvbuilds/financial-world-generator/blob/main/SPEC.md): the full design.
-- [`TARGET_EXAMPLE.md`](https://github.com/apoorvbuilds/financial-world-generator/blob/main/TARGET_EXAMPLE.md): the SaaS world, written as the prompt the generator will receive.
-- [`tasks/plan.md`](https://github.com/apoorvbuilds/financial-world-generator/blob/main/tasks/plan.md) and [`tasks/todo.md`](https://github.com/apoorvbuilds/financial-world-generator/blob/main/tasks/todo.md): the build plan, about 60 small tasks with checkpoints.
-- [`docs/declaring-an-institution.md`](https://github.com/apoorvbuilds/financial-world-generator/blob/main/docs/declaring-an-institution.md): the institution declaration language, tested on paper against the SaaS institutions and the trucking ones. Every SaaS table column maps to a generic source. Trucking needed six small additions, which are proposed and waiting for approval.
+- [`SPEC.md`](https://github.com/rottencontext/financial-world-generator/blob/main/SPEC.md): the full design.
+- [`TARGET_EXAMPLE.md`](https://github.com/rottencontext/financial-world-generator/blob/main/TARGET_EXAMPLE.md): the SaaS world, written as the prompt the generator will receive.
+- [`tasks/plan.md`](https://github.com/rottencontext/financial-world-generator/blob/main/tasks/plan.md) and [`tasks/todo.md`](https://github.com/rottencontext/financial-world-generator/blob/main/tasks/todo.md): the build plan, about 60 small tasks with checkpoints.
+- [`docs/declaring-an-institution.md`](https://github.com/rottencontext/financial-world-generator/blob/main/docs/declaring-an-institution.md): the institution declaration language, tested on paper against the SaaS institutions and the trucking ones. Every SaaS table column maps to a generic source. Trucking needed six small additions, which are proposed and waiting for approval.
 
 **Next**
 1. **Checkpoint 0:** approve the declaration language and decide on the additions trucking needed.

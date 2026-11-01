@@ -1,9 +1,9 @@
-# Jekyll config for the GitHub Pages blog (https://apoorvbuilds.github.io/financial-world-generator/)
+# Jekyll config for the GitHub Pages blog (https://rottencontext.github.io/financial-world-generator/)
 title: worldgen
 description: Notes on building a financial world generator, a simulator that produces realistic synthetic financial data.
 author:
   name: Apoorv Agarwal
-github_username: apoorvbuilds
+github_username: rottencontext
 theme: minima
 show_excerpts: true
 permalink: /:year/:month/:title/
