@@ -33,3 +33,6 @@ skills-lock.json
 .DS_Store
 .idea/
 .vscode/
+
+# UI snapshot of worlds/, rebuilt by ui/server.py
+ui/static/worlds_bundle.js
