@@ -125,3 +125,26 @@ def test_api_error_becomes_llm_error() -> None:
     llm = AnthropicLlm(Settings("anthropic", "m"), Client(error=error))  # type: ignore[arg-type]
     with pytest.raises(LlmError, match="APIConnectionError"):
         asyncio.run(llm.complete("s", "u", SCHEMA))
+
+
+def status_error(code: int) -> anthropic.APIStatusError:
+    request = httpx.Request("POST", "https://example.com")
+    response = httpx.Response(code, request=request)
+    return anthropic.APIStatusError("status", response=response, body=None)
+
+
+@pytest.mark.parametrize(
+    ("error", "transient"),
+    [
+        (anthropic.APIConnectionError(request=httpx.Request("POST", "https://x")), True),
+        (httpx.ReadTimeout("stalled mid-stream"), True),
+        (status_error(529), True),
+        (status_error(429), True),
+        (status_error(400), False),
+    ],
+)
+def test_errors_are_marked_transient_or_not(error: Exception, transient: bool) -> None:
+    llm = AnthropicLlm(Settings("deepseek", "m"), Client(error=error))  # type: ignore[arg-type]
+    with pytest.raises(LlmError) as caught:
+        asyncio.run(llm.complete("s", "u", SCHEMA))
+    assert caught.value.transient is transient

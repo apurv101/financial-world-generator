@@ -30,7 +30,8 @@ from llm_judge.verdict import (
 )
 
 ATTEMPTS = 3
-"""Model calls per run: a reply that isn't a usable verdict is asked for again, twice at most."""
+"""Model calls per run. A reply that isn't a usable verdict, or a call that fails for a transient
+reason (network, stalled stream, rate limit, server error), is tried again, twice at most."""
 
 
 class Source(BaseModel):
@@ -110,7 +111,12 @@ async def judge_once(
     schema = verdict_schema()
     note = ""
     for attempt in range(1, ATTEMPTS + 1):
-        reply = await llm.complete(system, user + note, schema)
+        try:
+            reply = await llm.complete(system, user + note, schema)
+        except LlmError as error:
+            if not error.transient or attempt == ATTEMPTS:
+                raise
+            continue
         try:
             verdict = parse_verdict(reply.text, rubric)
         except VerdictError as error:

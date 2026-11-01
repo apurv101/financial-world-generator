@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
 import anthropic
+import httpx2 as httpx
 
 Provider = Literal["anthropic", "deepseek"]
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
@@ -30,7 +31,15 @@ FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 
 class LlmError(Exception):
-    """The model call failed or its reply can't be used (refusal, cut off, API error)."""
+    """The model call failed or its reply can't be used (refusal, cut off, API error).
+
+    `transient` marks failures worth trying again: network errors, a stream that stalls or
+    drops, rate limits and server errors.
+    """
+
+    def __init__(self, message: str, transient: bool = False):
+        super().__init__(message)
+        self.transient = transient
 
 
 class LlmConfigError(Exception):
@@ -132,8 +141,17 @@ class AnthropicLlm:
                 async with self._client.messages.stream(**params) as stream:
                     message = await stream.get_final_message()
                     request_id = stream.request_id
+        except anthropic.APIConnectionError as error:  # includes APITimeoutError
+            raise LlmError(f"{type(error).__name__}: {error}", transient=True) from error
+        except anthropic.APIStatusError as error:
+            transient = error.status_code == 429 or error.status_code >= 500
+            raise LlmError(f"{type(error).__name__}: {error}", transient) from error
         except anthropic.APIError as error:
             raise LlmError(f"{type(error).__name__}: {error}") from error
+        except httpx.HTTPError as error:
+            # A stream that stalls or drops after the response has started surfaces as an
+            # httpx2 error, not an SDK one, and the SDK does not retry it.
+            raise LlmError(f"{type(error).__name__}: {error}", transient=True) from error
         stop = message.stop_reason or ""
         if stop == "refusal":
             raise LlmError(f"the model declined to judge (request {request_id})")

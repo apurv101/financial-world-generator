@@ -35,10 +35,13 @@ Measured on 2026-11-01 with `deepseek-v4-pro`, rubric `world`, the Lumen dry-run
 |---|---|---|
 | The same page (should be 100) | 100 | 100% |
 | The narrator's story from `TARGET_EXAMPLE.md`, 3 runs | 61 (53–70) | 69% (51–80%) |
-| The demo story (a one-line SaaS prompt) | DEMO_SIM | DEMO_COV |
+| The demo story (a one-line SaaS prompt) | 44 | 39% |
 | The trucking prompt (another industry) | 36 | 33% |
 
-The order is right, but a single run can move by about 15 points. Use `--runs 3` or more before trusting a difference between two harness versions.
+The order is right, but:
+
+- A single run can move by about 15 points (53 to 70 across the three runs above). Use `--runs 3` or more before trusting a difference between two harness versions.
+- DeepSeek follows the `world` rubric's "names are examples" only in part. It describes elements by role, but it still often marks an element partial because the provider, name or amount differs (Brex for Ramp, a different customer). That pushes same-industry candidates down, which is why the demo story lands only 8 points above trucking.
 
 Other commands:
 

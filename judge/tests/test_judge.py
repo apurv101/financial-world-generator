@@ -63,3 +63,16 @@ def test_judgment_serializes(tmp_path: Path) -> None:
     path = tmp_path / "v.json"
     path.write_text(judgment.model_dump_json())
     assert Judgment.model_validate_json(path.read_text()).judge == "fake:judge"
+
+
+def test_transient_failure_is_tried_again() -> None:
+    llm = FakeLlm([LlmError("stalled", transient=True), verdict_json()])
+    judgment, _ = run(llm)
+    assert judgment.runs[0].attempts == 2
+
+
+def test_lasting_failure_is_not_tried_again() -> None:
+    llm = FakeLlm([LlmError("bad request"), verdict_json()])
+    judgment, _ = run(llm)
+    assert [f.error for f in judgment.failures] == ["bad request"]
+    assert len(llm.calls) == 1
