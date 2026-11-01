@@ -2,10 +2,10 @@ import asyncio
 
 import pytest
 
-from worldgen.agents.roles.narrator import TEMPLATE, first_message, narrate
+from worldgen.agents.roles.narrator import TEMPLATE, first_message, narrate, system_prompt
 from worldgen.llm.base import LlmError, LlmReply
 from worldgen.llm.fake import FakeLlm, Request, text_reply, tool_reply
-from worldgen.policies import Policies
+from worldgen.policies import Policies, child_roles
 from worldgen.sinks.run_log import RunLog
 from worldgen.tree.nodes import Tree
 
@@ -53,8 +53,21 @@ def test_every_request_carries_the_template_and_the_three_tools() -> None:
     llm = FakeLlm([tool_reply(STORY), text_reply()])
     run(tree, llm)
     for request in llm.requests:
-        assert request.system == TEMPLATE
+        assert request.system == system_prompt(Policies())
         assert [t["name"] for t in request.tools] == ["tell_story", "spawn_child", "brief_child"]
+
+
+@pytest.mark.parametrize("option", ["inside_parts", "any_group"])
+def test_policy_child_roles_puts_its_rule_in_the_system_prompt(option: str) -> None:
+    policies = Policies.model_validate({"child_roles": option})
+    tree = Tree.new("A SaaS startup.")
+    llm = FakeLlm([tool_reply(STORY), text_reply()])
+    run(tree, llm, policies)
+    system = llm.requests[0].system
+    assert "{{child_roles}}" in TEMPLATE and "{{" not in system
+    assert child_roles.TEXT[option] in system  # type: ignore[index]
+    others = [text for name, text in child_roles.TEXT.items() if name != option]
+    assert not any(text in system for text in others)
 
 
 def test_tool_calls_run_in_the_order_written_and_results_return_in_one_message() -> None:

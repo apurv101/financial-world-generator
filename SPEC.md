@@ -190,6 +190,7 @@ A rule in this spec that names a policy describes that policy's default. Every p
 | `escalation_in_review` | `read_in_review`: an escalation made during a review that hasn't yet read its reports is read there | `next_day`: every escalation moves the parent's review to the next day |
 | `report_turn_tools` | `report_only`: act tools and `send_message` are rejected in a report turn | `all`: a report turn can act and send messages |
 | `list_calls` | `all_or_nothing`: one failing item rejects the whole call | `per_item`: the valid items apply, and the failing ones are named |
+| `child_roles` | `inside_parts`: a narrator makes narrators only for groups inside its part, such as departments or a household; every outside party with a deal of its own is an actor | `any_group`: any group whose several people will each act is a narrator, inside the narrator's part or outside it, so the tree goes as deep as the people who act |
 | `institutions_at_reviews` | `false`: `declare_institution` works only on day 0 | `true`: narrators can also declare institutions at reviews |
 
 ### Run history (log)

@@ -119,10 +119,13 @@ A run is never edited after it finishes, and later edits to the world don't chan
 ```
 uv sync
 uv run pytest -q                                   # tests, with a scripted fake model
-uv run --env-file .env worldgen narrate --prompt-file TARGET_EXAMPLE.md --out worlds/lumen/story --depth 2
+uv run --env-file .env worldgen narrate --prompt-file TARGET_EXAMPLE.md --out worlds/lumen/story
 uv run --env-file .env worldgen narrate --prompt "The sales department of ..." --brief "What the company is ..." --out worlds/sales
-uv run --env-file .env worldgen expand worlds/lumen/story n_sales --depth 1   # continue from any pending narrator
+uv run --env-file .env worldgen narrate --prompt "..." --out worlds/x --depth 0 --policy child_roles=any_group
+uv run --env-file .env worldgen expand worlds/x n_sales   # continue from any pending narrator
 ```
+
+The narrators decide how deep the tree goes: a run continues until no narrator is pending. `--depth N` stops it early, and `worldgen expand` picks it up later. Which children become narrators is policy `child_roles`: `inside_parts` (default) keeps every outside party an actor, and `any_group` lets a customer, vendor or household with several people who act become a narrator too.
 
 Each output directory holds `tree.json` (every node's prompt, brief and story), `story.md` (the same, to read) and `log.jsonl` (every model reply and tool call). The model is Claude (`claude-opus-5-5`) when `ANTHROPIC_API_KEY` is set, otherwise DeepSeek's Anthropic-compatible API when `DEEPSEEK_API_KEY` is set; `--provider` and `--model` override that.
 

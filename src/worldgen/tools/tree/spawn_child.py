@@ -22,8 +22,8 @@ class ChildSpec(BaseModel):
     )
     role: Literal["narrator", "actor"] = Field(
         description=(
-            "narrator for a part with several people or parties of its own; actor for one "
-            "person or business acting for itself."
+            "narrator for a part that holds people or parties of its own; actor for one who "
+            "acts alone. Your instructions say which parties count as which."
         )
     )
     name: str = Field(

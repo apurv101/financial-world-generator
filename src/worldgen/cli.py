@@ -1,7 +1,8 @@
 """worldgen command line.
 
 uv run --env-file .env worldgen narrate --prompt-file TARGET_EXAMPLE.md --out worlds/lumen/story
-uv run --env-file .env worldgen expand worlds/lumen/story n_sales --depth 1
+uv run --env-file .env worldgen narrate --prompt "..." --out worlds/x --depth 0   # root only
+uv run --env-file .env worldgen expand worlds/x n_sales
 """
 
 import asyncio
@@ -42,8 +43,14 @@ ModelOpt = Annotated[
 ]
 EffortOpt = Annotated[Effort, typer.Option(help="How hard the model thinks.")]
 DepthOpt = Annotated[
-    int,
-    typer.Option(min=0, help="Narrator levels to expand below the starting one. 0: only that one."),
+    int | None,
+    typer.Option(
+        min=0,
+        help=(
+            "Stop after this many narrator levels below the starting one (0: only that one). "
+            "Default: no limit; the narrators decide how deep the tree goes."
+        ),
+    ),
 ]
 PolicyOpt = Annotated[
     list[str] | None,
@@ -67,7 +74,7 @@ def narrate(
         Path | None, typer.Option(exists=True, dir_okay=False, help="The brief, read from a file.")
     ] = None,
     name: Annotated[str, typer.Option(help="The starting narrator's name.")] = "Root narrator",
-    depth: DepthOpt = 0,
+    depth: DepthOpt = None,
     provider: ProviderOpt = None,
     model: ModelOpt = None,
     effort: EffortOpt = "high",
@@ -91,7 +98,7 @@ def expand(
     node: Annotated[
         str | None, typer.Argument(help="The pending narrator to expand. Default: every one.")
     ] = None,
-    depth: DepthOpt = 0,
+    depth: DepthOpt = None,
     provider: ProviderOpt = None,
     model: ModelOpt = None,
     effort: EffortOpt = "high",
@@ -120,7 +127,7 @@ def expand(
 def _run(
     tree: Tree,
     targets: list[str],
-    depth: int,
+    depth: int | None,
     out: Path,
     provider: Provider | None,
     model: str | None,
@@ -146,9 +153,8 @@ def _run(
         effort=effort,
         policies=policies.model_dump(),
     )
-    typer.echo(
-        f"Using {llm.name}, effort {effort}. Narrating {', '.join(targets)} (depth {depth})."
-    )
+    levels = "every level" if depth is None else f"depth {depth}"
+    typer.echo(f"Using {llm.name}, effort {effort}. Narrating {', '.join(targets)} ({levels}).")
 
     def save() -> None:
         tree.save(out / "tree.json")
@@ -187,8 +193,7 @@ def _summary(tree: Tree, entries: list[dict[str, Any]], out: Path) -> None:
     pending = tree.pending_narrators()
     if pending:
         typer.echo(
-            f"Pending narrators: {', '.join(pending)}. Continue with: "
-            f"worldgen expand {out} [NODE] --depth N"
+            f"Pending narrators: {', '.join(pending)}. Continue with: worldgen expand {out} [NODE]"
         )
     typer.echo(f"Wrote {out / 'tree.json'}, {out / 'story.md'} and {out / 'log.jsonl'}.")
 

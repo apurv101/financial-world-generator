@@ -10,7 +10,7 @@ from typing import Any
 
 from worldgen.agents.loop import AgentLoop, TurnResult, TurnStatus
 from worldgen.llm.base import Llm
-from worldgen.policies import Policies
+from worldgen.policies import Policies, child_roles
 from worldgen.sinks.run_log import RunLog
 from worldgen.tools.base import Tool
 from worldgen.tools.tree.brief_child import BriefChild
@@ -20,6 +20,13 @@ from worldgen.tools.tree.tell_story import TellStory
 from worldgen.tree.nodes import Node, NodeStatus, Tree
 
 TEMPLATE = resources.files("worldgen.agents.templates").joinpath("narrator.md").read_text()
+
+
+def system_prompt(policies: Policies) -> str:
+    """The template with each policy's text filled in."""
+    # policy child_roles
+    return TEMPLATE.replace("{{child_roles}}", child_roles.TEXT[policies.child_roles])
+
 
 TOOLS: tuple[Tool[TreeContext, Any], ...] = (TellStory(), SpawnChild(), BriefChild())
 
@@ -74,7 +81,7 @@ async def narrate(
     if node.status != "pending":
         raise ValueError(f"{node_id} has already taken its turn ({node.status})")
     ctx = TreeContext(tree, node_id, policies)
-    loop = AgentLoop(llm, TEMPLATE, TOOLS, log, max_steps)
+    loop = AgentLoop(llm, system_prompt(policies), TOOLS, log, max_steps)
     result = await loop.run_turn(
         ctx, node_id, first_message(node), missing_work, policies.unfinished_turn
     )

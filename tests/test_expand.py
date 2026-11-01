@@ -73,6 +73,14 @@ def test_depth_expands_narrator_children_level_by_level() -> None:
     )
 
 
+def test_no_depth_expands_until_no_narrator_is_pending() -> None:
+    tree = Tree.new("Alex Rivera's life.")
+    llm, seen = responder()
+    asyncio.run(expand(tree, "n_root", None, llm, RunLog()))
+    assert set(seen) == {"n_root", "n_company", "n_ops", "n_sales"}
+    assert tree.pending_narrators() == []
+
+
 def test_a_child_sees_only_its_own_prompt_and_brief() -> None:
     tree = Tree.new("Alex Rivera's life.")
     llm, seen = responder()

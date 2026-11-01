@@ -47,7 +47,9 @@ SALES_TURN = [tool_reply(("tell_story", {"story": "Sales story."})), text_reply(
 def test_narrate_then_expand(tmp_path: Path, fake_llm: list[FakeLlm]) -> None:
     out = tmp_path / "story"
     fake_llm.append(scripted(*ROOT_TURN))
-    result = runner.invoke(cli.app, ["narrate", "--prompt", "A SaaS startup.", "--out", str(out)])
+    result = runner.invoke(
+        cli.app, ["narrate", "--prompt", "A SaaS startup.", "--out", str(out), "--depth", "0"]
+    )
     assert result.exit_code == 0, result.output
     assert "Pending narrators: n_sales" in result.output
     assert "n_root  Root narrator  [told] (story 3 words, 1 children)" in result.output
@@ -62,6 +64,19 @@ def test_narrate_then_expand(tmp_path: Path, fake_llm: list[FakeLlm]) -> None:
 
     result = runner.invoke(cli.app, ["expand", str(out)])
     assert result.exit_code == 0 and "No pending narrators" in result.output
+
+
+def test_narrate_without_depth_goes_until_no_narrator_is_pending(
+    tmp_path: Path, fake_llm: list[FakeLlm]
+) -> None:
+    out = tmp_path / "story"
+    fake_llm.append(scripted(*ROOT_TURN, *SALES_TURN))
+    result = runner.invoke(cli.app, ["narrate", "--prompt", "A SaaS startup.", "--out", str(out)])
+    assert result.exit_code == 0, result.output
+    assert "every level" in result.output and "Pending narrators" not in result.output
+    assert Tree.load(out / "tree.json").node("n_sales").status == "told"
+    started = json.loads((out / "log.jsonl").read_text().splitlines()[0])
+    assert started["depth"] is None
 
 
 def test_narrate_reads_prompt_and_brief_files_and_policies(
@@ -115,7 +130,7 @@ def test_narrate_refuses_to_overwrite_and_expand_checks_the_node(
 ) -> None:
     out = tmp_path / "s"
     fake_llm.append(scripted(*ROOT_TURN))
-    runner.invoke(cli.app, ["narrate", "--prompt", "x", "--out", str(out)])
+    runner.invoke(cli.app, ["narrate", "--prompt", "x", "--out", str(out), "--depth", "0"])
     again = runner.invoke(cli.app, ["narrate", "--prompt", "x", "--out", str(out)])
     assert again.exit_code != 0 and "already holds a tree" in again.output
     wrong = runner.invoke(cli.app, ["expand", str(out), "n_root"])
