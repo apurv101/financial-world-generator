@@ -1,0 +1,21 @@
+# Jekyll config for the GitHub Pages blog (https://apoorvbuilds.github.io/financial-world-generator/)
+title: worldgen
+description: Notes on building a financial world generator, a simulator that produces realistic synthetic financial data.
+author:
+  name: Apoorv Agarwal
+github_username: apoorvbuilds
+theme: minima
+show_excerpts: true
+permalink: /:year/:month/:title/
+
+# Only the blog is published; the project files stay on GitHub.
+exclude:
+  - README.md
+  - SPEC.md
+  - TARGET_EXAMPLE.md
+  - AGENTS.md
+  - CLAUDE.md
+  - skills-lock.json
+  - docs/
+  - examples/
+  - tasks/
