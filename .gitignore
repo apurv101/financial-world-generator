@@ -21,8 +21,8 @@ htmlcov/
 .env.*
 !.env.example
 
-# Generated simulation output (regenerate with `worldgen simulate`)
-worlds/*/out/
+# Generated worlds: story trees, runs and logs
+worlds/
 
 # Local agent tooling (skills installed per machine with `npx skills add`)
 .agents/

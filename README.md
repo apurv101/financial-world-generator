@@ -2,7 +2,7 @@
 
 `worldgen` creates realistic synthetic financial data. It simulates a business as a world of LLM agents (founders, employees, customers, vendors, banks) and records what they do the way real institutions would. The output is the raw exports a business would actually have: bank transactions, card transactions, payment processor charges and payouts, and payroll journal entries.
 
-> **Status:** design phase. There is no code yet. This repo holds the spec, the build plan, and the language for declaring institutions, checked on paper against two industries. See [Where we are](#where-we-are).
+> **Status:** early build. The first agent, the narrator, is in `src/worldgen/`. The rest of this repo is the spec, the build plan, and the language for declaring institutions, checked on paper against two industries. See [Where we are](#where-we-are).
 
 ## Why
 
@@ -103,6 +103,7 @@ A run is never edited after it finishes, and later edits to the world don't chan
 - [`TARGET_EXAMPLE.md`](TARGET_EXAMPLE.md): the SaaS world, written as the prompt the generator will receive.
 - [`tasks/plan.md`](tasks/plan.md) and [`tasks/todo.md`](tasks/todo.md): the build plan, about 60 small tasks with checkpoints.
 - [`docs/declaring-an-institution.md`](docs/declaring-an-institution.md): the institution declaration language, tested on paper against the SaaS institutions and the trucking ones. Every SaaS table column maps to a generic source. Trucking needed six small additions, which are proposed and waiting for approval.
+- [`src/worldgen/`](src/worldgen): the narrator agent. Given a prompt (a whole world, or one part of it with context in a brief), it writes the detailed story of that part, creates the narrators and actors below it, and briefs each one. Its child narrators can then expand their own parts the same way. See [Run the narrator](#run-the-narrator).
 
 **Next**
 1. **Checkpoint 0:** approve the declaration language and decide on the additions trucking needed.
@@ -113,9 +114,21 @@ A run is never edited after it finishes, and later edits to the world don't chan
 6. **Authoring:** turn a one-paragraph prompt into a whole world.
 7. **Run history and the full 18-month run.**
 
+## Run the narrator
+
+```
+uv sync
+uv run pytest -q                                   # tests, with a scripted fake model
+uv run --env-file .env worldgen narrate --prompt-file TARGET_EXAMPLE.md --out worlds/lumen/story --depth 2
+uv run --env-file .env worldgen narrate --prompt "The sales department of ..." --brief "What the company is ..." --out worlds/sales
+uv run --env-file .env worldgen expand worlds/lumen/story n_sales --depth 1   # continue from any pending narrator
+```
+
+Each output directory holds `tree.json` (every node's prompt, brief and story), `story.md` (the same, to read) and `log.jsonl` (every model reply and tool call). The model is Claude (`claude-opus-5-5`) when `ANTHROPIC_API_KEY` is set, otherwise DeepSeek's Anthropic-compatible API when `DEEPSEEK_API_KEY` is set; `--provider` and `--model` override that.
+
 ## Planned commands
 
-None of these exist yet. They are the interface the spec defines.
+These are the rest of the interface the spec defines. None of them exist yet.
 
 ```
 uv sync                                          # install
