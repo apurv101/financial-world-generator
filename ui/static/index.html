@@ -1,141 +1,55 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>worldgen — Story &amp; World Observatory</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Worldgen Run Log</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="./styles.css?v=6" />
 </head>
 <body>
-  <div class="app-shell">
-    <!-- Top Navigation & World Switcher -->
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-badge">worldgen</span>
-        <div class="brand-titles">
-          <h1>World &amp; Story Observatory</h1>
-          <span class="brand-subtitle" id="connection-mode">Loading worlds...</span>
-        </div>
-      </div>
-
-      <div class="world-controls">
-        <label for="world-select" class="control-label">World</label>
+  <div class="wrap">
+    <header class="top">
+      <div class="eyebrow" id="world-eyebrow">worldgen · narrator run log</div>
+      <h1 id="world-title">Loading world…</h1>
+      <p class="lede" id="world-lede"></p>
+      <div class="facts" id="facts"></div>
+      <div class="top-controls">
+        <label class="world-picker-label" for="world-select">World</label>
         <select id="world-select" class="world-select" aria-label="Select world"></select>
-        <button id="refresh-btn" class="btn btn-secondary" title="Reload worlds from disk">Refresh</button>
-        <label class="btn btn-secondary file-upload-btn" title="Open any tree.json or log.jsonl file from disk">
-          Open JSON/Log
-          <input type="file" id="file-input" accept=".json,.jsonl,.md" multiple hidden />
-        </label>
+        <button class="themebtn" id="themebtn" type="button">Switch to light mode</button>
       </div>
-
-      <nav class="view-tabs" role="tablist">
-        <button class="view-tab active" data-view="explorer" role="tab">
-          Tree &amp; Node Explorer
-        </button>
-        <button class="view-tab" data-view="reader" role="tab">
-          Full Story Reader
-        </button>
-        <button class="view-tab" data-view="observatory" role="tab">
-          Run Log &amp; Telemetry
-        </button>
-      </nav>
     </header>
 
-    <!-- World Summary Metrics Ribbon -->
-    <section class="metrics-ribbon" id="metrics-ribbon"></section>
+    <section id="walk">
+      <div class="sec-head">
+        <div class="eyebrow">Every iteration</div>
+        <h2>The run</h2>
+        <p class="muted">
+          Each call has three slips. <b>Sent</b> is the request: system prompt and tools (identical every turn, so cached) and the messages. <b>Model replied</b> is the model's answer and the tools it chose. <b>Engine</b> is what the code did with each tool call, and the result that goes back to the model in the next call. A thick line on the left is a lane; a horizontal line is agents starting (lanes open) or reporting/merging back (lanes merge).
+        </p>
+      </div>
+      <div class="run">
+        <nav class="tl" id="tl" aria-label="Run timeline"></nav>
+        <div id="body"></div>
+      </div>
+    </section>
 
-    <!-- Main Workspace -->
-    <main class="workspace">
-      <!-- VIEW 1: Tree & Node Explorer -->
-      <section class="view-panel active" id="view-explorer">
-        <div class="split-layout">
-          <!-- Left Sidebar: Agent Hierarchy Tree -->
-          <aside class="tree-sidebar">
-            <div class="sidebar-controls">
-              <input
-                type="search"
-                id="node-search"
-                class="search-input"
-                placeholder="Search nodes, stories, prompts, briefs..."
-              />
-              <div class="filter-pills" id="role-filters">
-                <button class="pill active" data-filter="all">All</button>
-                <button class="pill" data-filter="narrator">Narrators</button>
-                <button class="pill" data-filter="actor">Actors</button>
-                <button class="pill" data-filter="has-story">With Story</button>
-                <button class="pill" data-filter="pending">Pending</button>
-              </div>
-            </div>
-            <div class="tree-container" id="tree-container"></div>
-          </aside>
-
-          <!-- Right Detail Area: Selected Node Story, Brief, Prompt, Children -->
-          <section class="node-detail-pane" id="node-detail-pane">
-            <div class="empty-state">Select a node from the tree to inspect its story, brief, and prompt.</div>
-          </section>
-        </div>
-      </section>
-
-      <!-- VIEW 2: Full Story Reader -->
-      <section class="view-panel" id="view-reader">
-        <div class="reader-layout">
-          <aside class="reader-toc">
-            <div class="toc-header">
-              <h3>Story Outline</h3>
-              <div class="toc-source-switch" id="doc-source-switch"></div>
-            </div>
-            <input
-              type="search"
-              id="reader-search"
-              class="search-input"
-              placeholder="Filter outline headings..."
-            />
-            <nav class="toc-list" id="toc-list"></nav>
-          </aside>
-          <article class="reader-content-wrapper">
-            <div class="reader-content markdown-body" id="reader-content"></div>
-          </article>
-        </div>
-      </section>
-
-      <!-- VIEW 3: Run Log & Telemetry Observatory -->
-      <section class="view-panel" id="view-observatory">
-        <div class="observatory-layout">
-          <aside class="observatory-sidebar">
-            <div class="obs-card">
-              <h3>Run Telemetry</h3>
-              <div id="obs-summary-stats"></div>
-            </div>
-            <div class="obs-card">
-              <h3>Filter Log Events</h3>
-              <input
-                type="search"
-                id="log-search"
-                class="search-input"
-                placeholder="Search thinking, tool inputs, results..."
-              />
-              <div class="filter-pills vertical" id="log-kind-filters">
-                <button class="pill active" data-kind="all">All Events</button>
-                <button class="pill" data-kind="llm_reply">LLM Replies &amp; Thinking</button>
-                <button class="pill" data-kind="tool_call">Tool Calls</button>
-                <button class="pill" data-kind="errors">Rejections / Errors</button>
-                <button class="pill" data-kind="lifecycle">Turn &amp; Run Lifecycle</button>
-              </div>
-            </div>
-            <div class="obs-card future-roadmap-card">
-              <h3>Simulation Observatory</h3>
-              <p class="muted-note">
-                Ready for Phase 1–5 expansion: once <code>worldgen simulate</code> runs, this panel will also inspect <code>events.jsonl</code> ledger movements and per-institution tables (Mercury, Stripe, Ramp, Rippling).
-              </p>
-            </div>
-          </aside>
-          <section class="log-timeline-container" id="log-timeline-container"></section>
-        </div>
-      </section>
-    </main>
+    <section id="reference">
+      <div class="sec-head">
+        <div class="eyebrow">Reference</div>
+        <h2>System prompts, tools, and policies</h2>
+        <p class="muted">Loaded from <code>src/worldgen/agents/templates/</code> and <code>src/worldgen/tools/tree/</code>. Hover any dotted underline in the run above to inspect it in place.</p>
+      </div>
+      <div class="refs" id="refs"></div>
+    </section>
   </div>
 
-  <script src="worlds_bundle.js"></script>
-  <script src="app.js"></script>
+  <div id="tip" role="tooltip" hidden></div>
+
+  <script src="./worlds_bundle.js?v=6"></script>
+  <script src="./app.js?v=6"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@ Usage:
 
 from __future__ import annotations
 
+import ast
 import argparse
 import json
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -17,6 +18,7 @@ from urllib.parse import unquote, urlparse
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 WORLDS_DIR = ROOT_DIR / "worlds"
+SRC_DIR = ROOT_DIR / "src" / "worldgen"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
@@ -33,6 +35,60 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
         except json.JSONDecodeError:
             continue
     return entries
+
+
+def load_code_metadata() -> dict[str, Any]:
+    """Reads system templates and tool definitions directly from src/worldgen/."""
+    templates: dict[str, dict[str, str]] = {}
+    tmpl_dir = SRC_DIR / "agents" / "templates"
+    if tmpl_dir.exists():
+        for md_file in sorted(tmpl_dir.glob("*.md")):
+            role = md_file.stem
+            templates[role] = {
+                "name": f"{role.capitalize()} template ({md_file.relative_to(ROOT_DIR)})",
+                "text": md_file.read_text(encoding="utf-8"),
+            }
+
+    tools: dict[str, list[str]] = {}
+    tools_dir = SRC_DIR / "tools" / "tree"
+    if tools_dir.exists():
+        for py_file in sorted(tools_dir.glob("*.py")):
+            if py_file.stem in ("__init__", "context"):
+                continue
+            try:
+                tree = ast.parse(py_file.read_text(encoding="utf-8"))
+                tool_name = py_file.stem
+                tool_desc = ast.get_docstring(tree) or ""
+                fields_sig: list[str] = []
+                for node in tree.body:
+                    if isinstance(node, ast.ClassDef):
+                        for stmt in node.body:
+                            if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+                                fname = stmt.target.id
+                                if fname != "model_config":
+                                    fields_sig.append(fname)
+                            elif isinstance(stmt, ast.Assign):
+                                for target in stmt.targets:
+                                    if isinstance(target, ast.Name) and target.id == "name":
+                                        val = ast.literal_eval(stmt.value)
+                                        if isinstance(val, str):
+                                            tool_name = val
+                                    elif isinstance(target, ast.Name) and target.id == "description":
+                                        val = ast.literal_eval(stmt.value)
+                                        if isinstance(val, str):
+                                            tool_desc = val
+                sig = f"{tool_name}({', '.join(fields_sig)})"
+                tools[tool_name] = [
+                    sig,
+                    f"{tool_desc}\n\nSource: {py_file.relative_to(ROOT_DIR)}",
+                ]
+            except Exception:
+                continue
+
+    return {
+        "templates": templates,
+        "tooldoc": tools,
+    }
 
 
 def _summarize_world(world_id: str, folder: Path) -> dict[str, Any]:
@@ -86,7 +142,6 @@ def _summarize_world(world_id: str, folder: Path) -> dict[str, Any]:
             if entry.get("is_error"):
                 tool_errors += 1
 
-    # Extract a short title from the root story first heading if available
     root_id = tree_data.get("root", "n_root")
     root_node = nodes.get(root_id, {})
     root_story = str(root_node.get("story") or "")
@@ -159,6 +214,7 @@ def load_world_payload(world_id: str) -> dict[str, Any] | None:
         "story_md": story_md,
         "narrator_output_md": narrator_output_md,
         "log_entries": log_entries,
+        "code_metadata": load_code_metadata(),
     }
 
 
@@ -174,11 +230,12 @@ def build_static_bundle() -> Path:
     bundle = {
         "worlds": summaries,
         "payloads": payloads,
+        "code_metadata": load_code_metadata(),
     }
     target = STATIC_DIR / "worlds_bundle.js"
     target.write_text(
-        "// Auto-generated snapshot of worlds/ for direct file:// viewing.\n"
-        "// Run `uv run python ui/server.py --build-bundle` or start `uv run python ui/server.py` for live updates.\n"
+        "// Auto-generated snapshot of worlds/ and src/worldgen/ for direct file:// viewing.\n"
+        "// Run `/usr/bin/python3 ui/server.py --build-bundle` or start `ui/server.py` for live updates.\n"
         f"window.__WORLDGEN_BUNDLE__ = {json.dumps(bundle, ensure_ascii=False)};\n",
         encoding="utf-8",
     )
@@ -187,7 +244,13 @@ def build_static_bundle() -> Path:
 
 class WorldgenUIHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, directory=str(STATIC_DIR), **kwargs)
+        super().__init__(*args, directory=str(STATIC_DIR), overlap=False) if False else super().__init__(*args, directory=str(STATIC_DIR), **kwargs)
+
+    def end_headers(self) -> None:
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        super().end_headers()
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
@@ -196,7 +259,7 @@ class WorldgenUIHandler(SimpleHTTPRequestHandler):
         if path == "/api/worlds":
             worlds = discover_worlds()
             data = [_summarize_world(wid, folder) for wid, folder in worlds.items()]
-            self._send_json({"worlds": data})
+            self._send_json({"worlds": data, "code_metadata": load_code_metadata()})
             return
 
         if path.startswith("/api/worlds/"):
@@ -215,12 +278,10 @@ class WorldgenUIHandler(SimpleHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
-        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(raw)
 
     def log_message(self, format: str, *args: Any) -> None:
-        # Keep console output clean
         pass
 
 
