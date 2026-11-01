@@ -1,0 +1,37 @@
+# The default rubric: any two outputs, judged on how much of the same content they carry.
+name = "general"
+description = "Any two outputs: how much of the same content they carry, whatever their format."
+guidance = """
+Names, numbers and dates count. Two outputs that describe the same thing with different specifics \
+agree only partly on it: mark the element partial and say what differs.
+"""
+
+[[dimensions]]
+id = "subject"
+name = "Subject and scope"
+weight = 1
+what = "Are they about the same thing, with the same purpose and the same boundaries (time span, scale, setting)?"
+
+[[dimensions]]
+id = "content"
+name = "Content coverage"
+weight = 2
+what = "How much of the reference's substance does the candidate carry?"
+
+[[dimensions]]
+id = "facts"
+name = "Facts and specifics"
+weight = 2
+what = "Where both cover the same thing, do names, numbers, dates and other specifics agree? A contradiction weighs more than an omission."
+
+[[dimensions]]
+id = "structure"
+name = "Structure and sequence"
+weight = 1
+what = "Do they have the same parts, the same order of events or steps, and the same relationships between parts?"
+
+[[dimensions]]
+id = "detail"
+name = "Level of detail"
+weight = 1
+what = "Do they go into a similar depth, neither much sketchier nor much finer-grained?"

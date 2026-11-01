@@ -1,0 +1,43 @@
+[project]
+name = "llm-judge"
+version = "0.1.0"
+description = "An LLM judge that scores how similar two outputs are, whatever their format."
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=2.0",
+    "pydantic>=2.7",
+    "pypdf>=5",
+    "typer>=0.12",
+]
+
+[project.scripts]
+judge = "llm_judge.cli:app"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.10",
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llm_judge"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+strict = true
+mypy_path = "src"

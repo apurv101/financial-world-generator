@@ -1,0 +1,65 @@
+# For worldgen outputs: a prompt, a story tree, a dry-run page, a manifest or generated tables.
+# It asks whether two outputs describe the same kind of world, the way TARGET_EXAMPLE.md defines
+# a match: the same kinds of events and stories, not the same numbers.
+name = "world"
+description = "Two descriptions of a simulated financial world: do they describe the same kind of world?"
+guidance = """
+Names, amounts, dates and providers are examples. Describe each element by its role, without the \
+reference's names, amounts or dates: "an enterprise customer prepays its annual contract by \
+wire", not "Contoso prepays $85,363.20". The quotes carry the specifics.
+
+An element matches when it plays the same role in both outputs, even under a different name, \
+amount, date or provider: a corporate card program autopaid from the operating account matches \
+another issuer's card program autopaid the same way. A different name, amount, date or provider \
+is never by itself a reason for partial or contradicted; it counts only under the specifics \
+dimension. Mark an element partial when the role is there but works differently (paid monthly \
+instead of up front, by card instead of wire), and contradicted when the candidate rules it out \
+(the company has no office, against an office with monthly rent).
+
+One output may reach further than the other: a dry run that also simulates days, against a story \
+that only sets up day 0. An element of the reference that the candidate never reaches is missing. \
+Say so in the summary, so a low score from a difference in reach isn't read as a difference in \
+the world.
+"""
+
+[[dimensions]]
+id = "premise"
+name = "Business and premise"
+weight = 1
+what = "The same kind of business, size, stage and setting, the same time frame and the same starting position?"
+
+[[dimensions]]
+id = "cast"
+name = "Cast"
+weight = 2
+what = "The same people, customers and vendors in the same roles, with the same behaviors and habits?"
+
+[[dimensions]]
+id = "money"
+name = "Accounts and money channels"
+weight = 2
+what = "The same institutions, accounts, cards and payment methods, the same settlement timing, and the same answer to who pays whom, how?"
+
+[[dimensions]]
+id = "history"
+name = "History before the start"
+weight = 1
+what = "The same things already in motion on day one: balances, open invoices, money in transit, sequences already running, relationships already in place?"
+
+[[dimensions]]
+id = "stories"
+name = "Stories and events"
+weight = 2
+what = "The same things happening: deals, trips, mistakes, late or short payments, refunds and disputes, hires, and their consequences?"
+
+[[dimensions]]
+id = "friction"
+name = "Realistic friction"
+weight = 1
+what = "The same kinds of lags, batching, cutoffs, errors and human arbitrariness, arising from how things work rather than from special rules?"
+
+[[dimensions]]
+id = "specifics"
+name = "Specifics"
+weight = 1
+what = "Do names, amounts and dates agree where both outputs cover the same element?"
